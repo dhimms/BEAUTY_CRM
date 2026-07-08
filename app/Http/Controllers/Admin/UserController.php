@@ -3,32 +3,124 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UserRequest;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return view('admin.users.index');
+        $users = User::query()
+            ->when($request->search, fn($q, $v) => $q->where(function ($q) use ($v) {
+                $q->where('name', 'like', "%$v%")
+                  ->orWhere('email', 'like', "%$v%")
+                  ->orWhere('phone', 'like', "%$v%");
+            }))
+            ->when($request->role, fn($q, $v) => $q->role($v))
+            ->when($request->status !== null && $request->status !== '', fn($q) => $q->where('is_active', $request->status))
+            ->with('roles')
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
+
+        $roles = Role::all();
+
+        return view('admin.users.index', compact('users', 'roles'));
     }
+
     public function create()
     {
-        return view('admin.users.create');
+        $roles = Role::all();
+        return view('admin.users.create', compact('roles'));
     }
-    public function store()
-    { /* TODO */
-    }
-    public function show($id)
+
+    public function store(UserRequest $request)
     {
-        return view('admin.users.show');
+        $data = $request->validated();
+
+        if ($request->hasFile('avatar')) {
+            $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
+        }
+
+        $data['password'] = Hash::make($data['password']);
+        $data['is_active'] = $request->boolean('is_active', true);
+        unset($data['role'], $data['password_confirmation']);
+
+        $user = User::create($data);
+        $user->assignRole($request->role);
+
+        return redirect()->route('admin.users.index')
+            ->with('success', "User {$user->name} berhasil dibuat.");
     }
-    public function edit($id)
+
+    public function show(User $user)
     {
-        return view('admin.users.edit');
+        $user->load('roles');
+        $leadCount  = $user->assignedLeads()->count();
+        $dealCount  = $user->assignedDeals()->count();
+        $wonDeals   = $user->assignedDeals()->won()->count();
+
+        return view('admin.users.show', compact('user', 'leadCount', 'dealCount', 'wonDeals'));
     }
-    public function update()
-    { /* TODO */
+
+    public function edit(User $user)
+    {
+        $roles = Role::all();
+        $user->load('roles');
+        return view('admin.users.edit', compact('user', 'roles'));
     }
-    public function destroy()
-    { /* TODO */
+
+    public function update(UserRequest $request, User $user)
+    {
+        $data = $request->validated();
+
+        if ($request->hasFile('avatar')) {
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+            $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
+        }
+
+        if (!empty($data['password'])) {
+            $data['password'] = Hash::make($data['password']);
+        } else {
+            unset($data['password']);
+        }
+
+        $data['is_active'] = $request->boolean('is_active', true);
+        unset($data['role'], $data['password_confirmation']);
+
+        $user->update($data);
+        $user->syncRoles([$request->role]);
+
+        return redirect()->route('admin.users.index')
+            ->with('success', "User {$user->name} berhasil diperbarui.");
+    }
+
+    public function destroy(User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return back()->with('error', 'Anda tidak bisa menghapus akun sendiri.');
+        }
+        $user->delete();
+        return redirect()->route('admin.users.index')
+            ->with('success', "User {$user->name} berhasil dihapus.");
+    }
+
+    public function toggle(User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return response()->json(['error' => 'Tidak bisa menonaktifkan akun sendiri.'], 422);
+        }
+        $user->update(['is_active' => !$user->is_active]);
+        return response()->json([
+            'success'   => true,
+            'is_active' => $user->is_active,
+            'message'   => $user->is_active ? 'User diaktifkan.' : 'User dinonaktifkan.',
+        ]);
     }
 }
