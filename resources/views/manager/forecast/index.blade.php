@@ -15,6 +15,10 @@
         icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>' />
     <x-kpi-card label="Total Projected Revenue" :value="'Rp ' . number_format($forecastData['total_projected'], 0, ',', '.')" color="amber"
         icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>' />
+    <x-kpi-card label="Best Case" :value="'Rp ' . number_format($forecastData['best_case'], 0, ',', '.')" color="blue"
+        icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>' />
+    <x-kpi-card label="Worst Case" :value="'Rp ' . number_format($forecastData['worst_case'], 0, ',', '.')" color="rose"
+        icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/>' />
 </div>
 
 {{-- Forecast Chart --}}

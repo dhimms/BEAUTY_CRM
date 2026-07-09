@@ -21,6 +21,8 @@ Route::middleware(['role:Manager'])->prefix('manager')->name('manager.')->group(
     Route::get('/reports/revenue', [ReportController::class, 'revenue'])->name('reports.revenue');
     Route::get('/reports/lost-reasons', [ReportController::class, 'lostReasons'])->name('reports.lost-reasons');
     Route::get('/reports/lead-sources', [ReportController::class, 'leadSources'])->name('reports.lead-sources');
+    Route::get('/reports/pipeline-analysis', [ReportController::class, 'pipelineAnalysis'])->name('reports.pipeline-analysis');
+    Route::get('/reports/team-activity', [ReportController::class, 'teamActivity'])->name('reports.team-activity');
     Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
 
     // Team Performance

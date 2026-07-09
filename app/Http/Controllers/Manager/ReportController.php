@@ -44,6 +44,20 @@ class ReportController extends Controller
         return view('manager.reports.lead-sources', compact('sourcesData'));
     }
 
+    public function pipelineAnalysis()
+    {
+        $pipelineData = $this->reportService->getPipelineData();
+        return view('manager.reports.pipeline-analysis', compact('pipelineData'));
+    }
+
+    public function teamActivity()
+    {
+        $activities = \App\Models\Activity::whereHas('user', function($q) {
+            $q->role('Sales');
+        })->with(['user', 'activitable'])->latest()->paginate(20);
+        return view('manager.reports.team-activity', compact('activities'));
+    }
+
     public function export(ExportReportRequest $request)
     {
         $format = $request->input('format', 'xlsx');

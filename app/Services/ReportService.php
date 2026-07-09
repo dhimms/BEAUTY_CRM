@@ -121,6 +121,15 @@ class ReportService
 
             $activities = Activity::where('user_id', $user->id)->count();
 
+            $wonDealsList = (clone $deals)->won()->get();
+            $totalDays = 0;
+            foreach ($wonDealsList as $wd) {
+                if ($wd->closed_at) {
+                    $totalDays += $wd->created_at->diffInDays($wd->closed_at);
+                }
+            }
+            $avgCloseTime = $wonDeals > 0 ? round($totalDays / $wonDeals, 1) : 0;
+
             return [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -134,6 +143,7 @@ class ReportService
                 'revenue' => $revenue,
                 'avg_deal_value' => $avgDealValue,
                 'activities' => $activities,
+                'avg_close_time' => $avgCloseTime,
             ];
         })->sortByDesc('revenue')->values();
     }
@@ -353,10 +363,16 @@ class ReportService
         $totalProjected = collect($months)->where('is_past', false)->sum('projected');
         $totalActual = collect($months)->where('is_past', true)->sum('actual');
 
+        $bestCase = Deal::open()->sum('value');
+        $closingStageId = PipelineStage::where('name', 'like', '%Closing%')->value('id');
+        $worstCase = $closingStageId ? Deal::open()->where('pipeline_stage_id', $closingStageId)->sum('value') : 0;
+
         return [
             'months' => $months,
             'total_projected' => $totalProjected,
             'total_actual' => $totalActual,
+            'best_case' => $bestCase,
+            'worst_case' => $worstCase,
         ];
     }
 

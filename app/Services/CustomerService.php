@@ -45,7 +45,8 @@ class CustomerService
             ->pluck('count', 'priority')
             ->toArray();
 
-        $newCustomersThisMonth = Customer::whereMonth('created_at', $today->month)
+        $newCustomersThisMonth = Customer::whereNotNull('lead_id')
+            ->whereMonth('created_at', $today->month)
             ->whereYear('created_at', $today->year)
             ->count();
 

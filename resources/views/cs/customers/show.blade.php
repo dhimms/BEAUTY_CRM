@@ -199,6 +199,12 @@
                         <label class="text-xs font-mono text-charcoal-400 uppercase tracking-wider">Status</label>
                         <p class="mt-1"><x-badge :color="$customer->status === 'active' ? 'emerald' : 'gray'" size="xs">{{ ucfirst($customer->status) }}</x-badge></p>
                     </div>
+                    @if($customer->lead_id)
+                    <div>
+                        <label class="text-xs font-mono text-charcoal-400 uppercase tracking-wider">Asal Deal</label>
+                        <p class="text-sm text-charcoal-900 mt-1 font-medium text-emerald-600">{{ $customer->lead->name ?? 'Deal' }}</p>
+                    </div>
+                    @endif
                     <div>
                         <label class="text-xs font-mono text-charcoal-400 uppercase tracking-wider">Tags</label>
                         <div class="flex flex-wrap gap-1 mt-1">
