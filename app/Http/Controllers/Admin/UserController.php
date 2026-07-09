@@ -47,7 +47,7 @@ class UserController extends Controller
         }
 
         $data['password'] = Hash::make($data['password']);
-        $data['is_active'] = $request->boolean('is_active', true);
+        $data['is_active'] = $request->boolean('is_active', false);
         unset($data['role'], $data['password_confirmation']);
 
         $user = User::create($data);
@@ -69,6 +69,12 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
+        // Manager hanya bisa di-toggle aktif/nonaktif, tidak bisa diedit
+        if ($user->hasRole('Manager') && $user->id !== auth()->id()) {
+            return redirect()->route('admin.users.index')
+                ->with('error', 'User dengan role Manager tidak dapat diedit. Anda hanya dapat mengaktifkan atau menonaktifkan akun ini.');
+        }
+
         $roles = Role::all();
         $user->load('roles');
         return view('admin.users.edit', compact('user', 'roles'));
@@ -76,6 +82,12 @@ class UserController extends Controller
 
     public function update(UserRequest $request, User $user)
     {
+        // Manager hanya bisa di-toggle aktif/nonaktif, tidak bisa diedit
+        if ($user->hasRole('Manager') && $user->id !== auth()->id()) {
+            return redirect()->route('admin.users.index')
+                ->with('error', 'User dengan role Manager tidak dapat diedit.');
+        }
+
         $data = $request->validated();
 
         if ($request->hasFile('avatar')) {
@@ -91,7 +103,7 @@ class UserController extends Controller
             unset($data['password']);
         }
 
-        $data['is_active'] = $request->boolean('is_active', true);
+        $data['is_active'] = $request->boolean('is_active', false);
         unset($data['role'], $data['password_confirmation']);
 
         $user->update($data);
@@ -106,6 +118,12 @@ class UserController extends Controller
         if ($user->id === auth()->id()) {
             return back()->with('error', 'Anda tidak bisa menghapus akun sendiri.');
         }
+
+        // Manager tidak bisa dihapus, hanya bisa di-toggle
+        if ($user->hasRole('Manager')) {
+            return back()->with('error', 'User dengan role Manager tidak dapat dihapus. Anda hanya dapat mengaktifkan atau menonaktifkan akun ini.');
+        }
+
         $user->delete();
         return redirect()->route('admin.users.index')
             ->with('success', "User {$user->name} berhasil dihapus.");
@@ -124,3 +142,4 @@ class UserController extends Controller
         ]);
     }
 }
+

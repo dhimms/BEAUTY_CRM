@@ -1,4 +1,4 @@
-﻿@extends('layouts.partials.app')
+@extends('layouts.partials.app')
 @section('title', 'User Profile: ' . $user->name)
 @section('breadcrumb')
     <li><a href="{{ route('admin.dashboard') }}" class="hover:text-charcoal-900 transition-colors">Dashboard</a></li>
@@ -35,10 +35,14 @@
             </div>
 
             <div class="mt-6 flex flex-col gap-2">
+                @if(!$user->hasRole('Manager'))
                 <a href="{{ route('admin.users.edit', $user) }}" class="w-full inline-flex justify-center items-center gap-2 px-4 py-2 text-sm font-medium text-charcoal-700 bg-white border border-charcoal-200 rounded-xl hover:bg-charcoal-50 transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                     Edit Profile
                 </a>
+                @else
+                <p class="text-xs text-center text-charcoal-400 italic">User dengan role Manager hanya bisa diaktifkan atau dinonaktifkan.</p>
+                @endif
             </div>
         </x-card>
     </div>

@@ -14,11 +14,14 @@ class CustomerController extends Controller
             ->with(['lead', 'csUser'])
             ->search($request->search)
             ->when($request->status, fn($q, $v) => $q->where('status', $v))
+            ->when($request->cs_id, fn($q, $v) => $q->where('user_id', $v))
             ->latest()
             ->paginate(20)
             ->withQueryString();
 
-        return view('admin.customers.index', compact('customers'));
+        $csList = \App\Models\User::role('Customer Service')->where('is_active', true)->orderBy('name')->get();
+
+        return view('admin.customers.index', compact('customers', 'csList'));
     }
 
     public function show(Customer $customer)

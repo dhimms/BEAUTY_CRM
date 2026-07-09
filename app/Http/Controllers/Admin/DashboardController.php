@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Deal;
 use App\Models\Lead;
+use App\Models\PipelineStage;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -13,21 +14,47 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $now = now();
+        $now  = now();
+        $prev = now()->subMonth();
 
-        // KPI Cards
-        $totalLeads       = Lead::count();
+        // ─── KPI This Month ────────────────────────────────────
+        $totalLeads       = Lead::whereMonth('created_at', $now->month)->whereYear('created_at', $now->year)->count();
+        $totalLeadsPrev   = Lead::whereMonth('created_at', $prev->month)->whereYear('created_at', $prev->year)->count();
+
         $activeDeals      = Deal::open()->count();
+        $activeDealsPrev  = Deal::open()->whereMonth('created_at', $prev->month)->whereYear('created_at', $prev->year)->count();
+
         $wonThisMonth     = Deal::won()
             ->whereMonth('closed_at', $now->month)
             ->whereYear('closed_at', $now->year)
             ->count();
+        $wonLastMonth     = Deal::won()
+            ->whereMonth('closed_at', $prev->month)
+            ->whereYear('closed_at', $prev->year)
+            ->count();
+
         $revenueThisMonth = Deal::won()
             ->whereMonth('closed_at', $now->month)
             ->whereYear('closed_at', $now->year)
             ->sum('value');
+        $revenueLastMonth = Deal::won()
+            ->whereMonth('closed_at', $prev->month)
+            ->whereYear('closed_at', $prev->year)
+            ->sum('value');
 
-        // Lead trend last 6 months (for Chart.js)
+        // Helper: hitung persentase trend
+        $trendPercent = fn($curr, $prev) => $prev > 0
+            ? round((($curr - $prev) / $prev) * 100, 1)
+            : ($curr > 0 ? 100 : 0);
+
+        $kpi = [
+            'totalLeads'   => ['value' => $totalLeads,       'trend' => $trendPercent($totalLeads, $totalLeadsPrev),       'up' => $totalLeads >= $totalLeadsPrev],
+            'activeDeals'  => ['value' => $activeDeals,      'trend' => $trendPercent($activeDeals, $activeDealsPrev),     'up' => $activeDeals >= $activeDealsPrev],
+            'wonThisMonth' => ['value' => $wonThisMonth,     'trend' => $trendPercent($wonThisMonth, $wonLastMonth),       'up' => $wonThisMonth >= $wonLastMonth],
+            'revenue'      => ['value' => $revenueThisMonth, 'trend' => $trendPercent($revenueThisMonth, $revenueLastMonth), 'up' => $revenueThisMonth >= $revenueLastMonth],
+        ];
+
+        // ─── Lead Trend (6 bulan terakhir) ────────────────────
         $leadTrend = [];
         for ($i = 5; $i >= 0; $i--) {
             $month = $now->copy()->subMonths($i);
@@ -39,7 +66,7 @@ class DashboardController extends Controller
             ];
         }
 
-        // Leads by source (for doughnut chart)
+        // ─── Leads by Source (doughnut chart) ─────────────────
         $leadsBySource = Lead::select('lead_source_id', DB::raw('count(*) as total'))
             ->with('source')
             ->groupBy('lead_source_id')
@@ -49,13 +76,23 @@ class DashboardController extends Controller
                 'count' => $item->total,
             ]);
 
-        // Recent activities (5 latest)
+        // ─── Pipeline Summary (bar chart) ─────────────────────
+        $pipelineSummary = PipelineStage::withCount(['deals' => fn($q) => $q->where('status', 'open')])
+            ->ordered()
+            ->get()
+            ->map(fn($stage) => [
+                'label' => $stage->name,
+                'count' => $stage->deals_count,
+                'color' => $stage->color ?? '#F43F5E',
+            ]);
+
+        // ─── Recent Activities (10 terbaru) ───────────────────
         $recentActivities = Activity::with(['user', 'activitable'])
             ->latest()
-            ->limit(5)
+            ->limit(10)
             ->get();
 
-        // Top performing sales (won deals this month)
+        // ─── Top Sales (won deals bulan ini) ──────────────────
         $topSales = User::role('Sales')
             ->withCount(['assignedDeals as won_this_month' => fn($q) => $q
                 ->won()
@@ -72,14 +109,13 @@ class DashboardController extends Controller
             ->get();
 
         return view('admin.dashboard', compact(
-            'totalLeads',
-            'activeDeals',
-            'wonThisMonth',
-            'revenueThisMonth',
+            'kpi',
             'leadTrend',
             'leadsBySource',
+            'pipelineSummary',
             'recentActivities',
             'topSales'
         ));
     }
 }
+

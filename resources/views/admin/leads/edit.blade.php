@@ -103,10 +103,17 @@
             </div>
         </div>
 
-        <div class="pt-6 border-t border-charcoal-200 flex items-center justify-end gap-3">
-            <a href="{{ route('admin.leads.show', $lead) }}" class="px-4 py-2 text-sm font-medium text-charcoal-700 bg-white border border-charcoal-200 rounded-xl hover:bg-charcoal-50 transition-colors">Cancel</a>
-            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-xl hover:bg-rose-700 transition-colors">Save Changes</button>
+        <div class="pt-6 border-t border-charcoal-200 flex items-center justify-between">
+            <button form="delete-form" type="submit" class="px-4 py-2 text-sm font-medium text-rose-600 bg-rose-50 border border-transparent rounded-xl hover:bg-rose-100 transition-colors">Delete Lead</button>
+            <div class="flex items-center gap-3">
+                <a href="{{ route('admin.leads.show', $lead) }}" class="px-4 py-2 text-sm font-medium text-charcoal-700 bg-white border border-charcoal-200 rounded-xl hover:bg-charcoal-50 transition-colors">Cancel</a>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-xl hover:bg-rose-700 transition-colors">Save Changes</button>
+            </div>
         </div>
+    </form>
+    <form id="delete-form" action="{{ route('admin.leads.destroy', $lead) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this lead?');" class="hidden">
+        @csrf
+        @method('DELETE')
     </form>
 </x-card>
 @endsection

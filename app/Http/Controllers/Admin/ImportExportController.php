@@ -34,7 +34,7 @@ class ImportExportController extends Controller
     public function export(Request $request)
     {
         return $this->service->exportLeads($request->only([
-            'search', 'status', 'source', 'qualification', 'assigned_to', 'date_from', 'date_to',
+            'search', 'status', 'source', 'qualification', 'assigned_to', 'date_from', 'date_to', 'period',
         ]));
     }
 

@@ -3,7 +3,6 @@
 namespace App\Exports;
 
 use App\Models\Lead;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -20,8 +19,33 @@ class LeadExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize
         $this->filters = $filters;
     }
 
+    /**
+     * Resolve date range dari pilihan periode.
+     */
+    protected function resolveDateRange(): array
+    {
+        $period    = $this->filters['period'] ?? null;
+        $dateFrom  = $this->filters['date_from'] ?? null;
+        $dateTo    = $this->filters['date_to'] ?? null;
+
+        if ($period) {
+            $dateFrom = match($period) {
+                'today'      => now()->toDateString(),
+                'this_week'  => now()->startOfWeek()->toDateString(),
+                'this_month' => now()->startOfMonth()->toDateString(),
+                'this_year'  => now()->startOfYear()->toDateString(),
+                default      => null,
+            };
+            $dateTo = now()->toDateString();
+        }
+
+        return [$dateFrom, $dateTo];
+    }
+
     public function query()
     {
+        [$dateFrom, $dateTo] = $this->resolveDateRange();
+
         return Lead::query()
             ->with(['source', 'assignedUser', 'creator'])
             ->search($this->filters['search'] ?? null)
@@ -29,8 +53,8 @@ class LeadExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize
             ->filterSource($this->filters['source'] ?? null)
             ->filterQualification($this->filters['qualification'] ?? null)
             ->filterAssigned($this->filters['assigned_to'] ?? null)
-            ->when($this->filters['date_from'] ?? null, fn($q, $v) => $q->whereDate('created_at', '>=', $v))
-            ->when($this->filters['date_to'] ?? null, fn($q, $v) => $q->whereDate('created_at', '<=', $v))
+            ->when($dateFrom, fn($q, $v) => $q->whereDate('created_at', '>=', $v))
+            ->when($dateTo,   fn($q, $v) => $q->whereDate('created_at', '<=', $v))
             ->latest();
     }
 
@@ -68,3 +92,4 @@ class LeadExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize
         ];
     }
 }
+

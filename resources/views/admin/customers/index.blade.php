@@ -9,7 +9,7 @@
             <input type="text" name="search" value="{{ request('search') }}" placeholder="Search name, phone, or tags..." class="w-full px-4 py-2 bg-charcoal-50 border border-charcoal-200 rounded-xl focus:ring-rose-500 focus:border-rose-500 sm:text-sm">
         </div>
         
-        <div class="w-full md:w-56">
+        <div class="w-full md:w-44">
             <select name="status" class="w-full px-4 py-2 bg-charcoal-50 border border-charcoal-200 rounded-xl focus:ring-rose-500 focus:border-rose-500 sm:text-sm" onchange="this.form.submit()">
                 <option value="">All Status</option>
                 <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
@@ -18,9 +18,18 @@
             </select>
         </div>
 
+        <div class="w-full md:w-56">
+            <select name="cs_id" class="w-full px-4 py-2 bg-charcoal-50 border border-charcoal-200 rounded-xl focus:ring-rose-500 focus:border-rose-500 sm:text-sm" onchange="this.form.submit()">
+                <option value="">All CS PIC</option>
+                @foreach($csList as $cs)
+                    <option value="{{ $cs->id }}" {{ request('cs_id') == $cs->id ? 'selected' : '' }}>{{ $cs->name }}</option>
+                @endforeach
+            </select>
+        </div>
+
         <div class="flex items-center gap-2">
             <button type="submit" class="px-4 py-2 bg-charcoal-100 text-charcoal-700 hover:bg-charcoal-200 rounded-xl text-sm font-medium transition-colors">Filter</button>
-            @if(request()->hasAny(['search', 'status']))
+            @if(request()->hasAny(['search', 'status', 'cs_id']))
                 <a href="{{ route('admin.customers.index') }}" class="ml-2 px-4 py-2 text-rose-600 hover:text-rose-700 text-sm font-medium">Reset</a>
             @endif
         </div>

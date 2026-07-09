@@ -33,13 +33,13 @@ Route::middleware(['role:Admin'])->prefix('admin')->name('admin.')->group(functi
     // Lost Reasons
     Route::resource('lost-reasons', LostReasonController::class);
 
-    // Leads (full CRUD for admin)
-    Route::resource('leads', LeadController::class);
-
     // Import/Export (must be before resource to avoid route conflict)
     Route::post('/leads/import', [ImportExportController::class, 'import'])->name('leads.import');
     Route::get('/leads/export', [ImportExportController::class, 'export'])->name('leads.export');
     Route::get('/leads/import/template', [ImportExportController::class, 'downloadTemplate'])->name('leads.import.template');
+
+    // Leads (full CRUD for admin)
+    Route::resource('leads', LeadController::class);
 
     // Deals
     Route::resource('deals', DealController::class)->except(['create', 'store']);
