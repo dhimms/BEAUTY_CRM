@@ -5,14 +5,20 @@ use App\Http\Controllers\Sales\DashboardController;
 use App\Http\Controllers\Sales\LeadController;
 use App\Http\Controllers\Sales\DealController;
 use App\Http\Controllers\Sales\ActivityController;
+use App\Http\Controllers\Sales\CustomerController;
 
 Route::middleware(['role:Sales'])->prefix('sales')->name('sales.')->group(function () {
+    // Customers
+    Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
+
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Leads (read + qualify + convert)
+    // Leads (CRUD + qualify + convert)
     Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
+    Route::get('/leads/create', [LeadController::class, 'create'])->name('leads.create');
+    Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
     Route::get('/leads/{lead}', [LeadController::class, 'show'])->name('leads.show');
     Route::post('/leads/{lead}/qualify', [LeadController::class, 'qualify'])->name('leads.qualify');
     Route::post('/leads/{lead}/convert', [LeadController::class, 'convert'])->name('leads.convert');
