@@ -3,30 +3,62 @@
 namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Manager\ExportReportRequest;
+use App\Exports\SalesPerformanceExport;
+use App\Exports\RevenueExport;
+use App\Services\ReportService;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ReportController extends Controller
 {
+    public function __construct(
+        private ReportService $reportService
+    ) {}
+
     public function index()
     {
         return view('manager.reports.index');
     }
+
     public function salesPerformance()
     {
-        return view('manager.reports.sales-performance');
+        $salesData = $this->reportService->getSalesPerformance();
+        return view('manager.reports.sales-performance', compact('salesData'));
     }
+
     public function revenue()
     {
-        return view('manager.reports.revenue');
+        $revenueData = $this->reportService->getRevenueReport(12);
+        return view('manager.reports.revenue', compact('revenueData'));
     }
+
     public function lostReasons()
     {
-        return view('manager.reports.lost-reasons');
+        $lostData = $this->reportService->getLostReasons();
+        return view('manager.reports.lost-reasons', compact('lostData'));
     }
+
     public function leadSources()
     {
-        return view('manager.reports.lead-sources');
+        $sourcesData = $this->reportService->getLeadSources();
+        return view('manager.reports.lead-sources', compact('sourcesData'));
     }
-    public function export()
-    { /* TODO */
+
+    public function export(ExportReportRequest $request)
+    {
+        $format = $request->input('format', 'xlsx');
+        $type = $request->input('report_type');
+
+        return match ($type) {
+            'sales-performance' => Excel::download(
+                new SalesPerformanceExport($this->reportService),
+                "sales-performance.{$format}"
+            ),
+            'revenue' => Excel::download(
+                new RevenueExport($this->reportService),
+                "revenue-report.{$format}"
+            ),
+            default => redirect()->back()->with('error', 'Tipe report tidak valid.'),
+        };
     }
 }
