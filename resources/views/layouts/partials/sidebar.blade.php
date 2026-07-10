@@ -99,21 +99,7 @@
                     </a>
                 @endif
 
-                {{-- Service Tickets (CS) --}}
-                @if(auth()->user()->isCS() || auth()->user()->isAdmin())
-                    <a href="{{ route('cs.tickets.index') }}"
-                        class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
-                              {{ request()->routeIs('*ticket*') ? 'bg-rose-500/10 text-rose-400 border-l-3 border-rose-500' : 'text-charcoal-300 hover:text-white hover:bg-charcoal-800' }}">
-                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                        </svg>
-                        <span class="whitespace-nowrap transition-opacity duration-200"
-                            :class="sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'">
-                            Service Tickets
-                        </span>
-                    </a>
-                @endif
+
             </div>
         </div>
 

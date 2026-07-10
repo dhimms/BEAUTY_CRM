@@ -1,4 +1,4 @@
-﻿@extends('layouts.partials.app')
+@extends('layouts.partials.app')
 @section('title', 'Lead Sources')
 @section('page-header', 'Lead Sources')
 @section('page-actions')
@@ -14,7 +14,7 @@
         <x-card padding="false" class="flex flex-col relative overflow-hidden group">
             <div class="p-6 flex-1">
                 <div class="flex justify-between items-start mb-4">
-                    <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-sm" style="background-color: {{ $source->color ?? '#F43F5E' }}20; color: {{ $source->color ?? '#F43F5E' }}">
+                    <div class="px-4 py-2 rounded-xl flex items-center justify-center text-xl font-medium shadow-sm" style="background-color: {{ $source->color ?? '#F43F5E' }}20; color: {{ $source->color ?? '#F43F5E' }}">
                         {{ $source->icon ?? '🎯' }}
                     </div>
                     <div class="flex items-center gap-2">
@@ -33,7 +33,7 @@
                     {{ $source->leads_count }} Leads Generated
                 </div>
             </div>
-            <div class="bg-charcoal-50 px-6 py-3 border-t border-charcoal-100 flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div class="bg-charcoal-50 px-6 py-3 border-t border-charcoal-100 flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
                 <a href="{{ route('admin.lead-sources.edit', $source) }}" class="text-sm font-medium text-amber-600 hover:text-amber-800">Edit</a>
                 <form action="{{ route('admin.lead-sources.destroy', $source) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this lead source?');">
                     @csrf
