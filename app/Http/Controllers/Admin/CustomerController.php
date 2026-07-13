@@ -39,13 +39,13 @@ class CustomerController extends Controller
     public function update(Request $request, Customer $customer)
     {
         $validated = $request->validate([
-            'name'    => ['required', 'string', 'max:255'],
-            'email'   => ['nullable', 'email'],
-            'phone'   => ['required', 'string', 'max:20'],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['nullable', 'email'],
+            'phone' => ['required', 'string', 'max:20'],
             'address' => ['nullable', 'string'],
-            'status'  => ['required', 'in:active,inactive,churn'],
-            'notes'   => ['nullable', 'string'],
-            'tags'    => ['nullable', 'string'],
+            'status' => ['required', 'in:active,inactive,churn'],
+            'notes' => ['nullable', 'string'],
+            'tags' => ['nullable', 'string'],
         ]);
 
         $validated['tags'] = $request->tags
