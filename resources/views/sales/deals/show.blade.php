@@ -26,8 +26,12 @@
         <form action="{{ route('sales.deals.close', $deal) }}" method="POST" class="inline">
             @csrf
             <input type="hidden" name="outcome" value="won">
-            <button type="submit" onclick="return confirm('Tandai deal ini sebagai WON? Customer baru akan dibuat.')"
-                    class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-xl hover:bg-emerald-700 transition-colors">
+            @php $isClosingStage = strtolower(trim($deal->pipelineStage->name)) === 'closing'; @endphp
+            <button type="submit" 
+                    @if($isClosingStage) onclick="return confirm('Tandai deal ini sebagai WON? Customer baru akan dibuat.')" @endif
+                    @disabled(!$isClosingStage)
+                    class="inline-flex items-center gap-2 px-4 py-2 {{ $isClosingStage ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-emerald-100 text-emerald-500 cursor-not-allowed' }} text-sm font-medium rounded-xl transition-colors"
+                    @if(!$isClosingStage) title="Deal harus mencapai tahap Closing terlebih dahulu" @endif>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 Won
             </button>

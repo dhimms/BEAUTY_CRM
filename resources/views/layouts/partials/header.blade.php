@@ -33,7 +33,9 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                             d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                     </svg>
-                    <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full"></span>
+                    @if(auth()->user()->unreadNotifications->count() > 0)
+                        <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full"></span>
+                    @endif
                 </button>
 
                 {{-- Dropdown --}}
@@ -41,20 +43,25 @@
                     class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-charcoal-200 overflow-hidden">
                     <div class="px-4 py-3 border-b border-charcoal-100 flex items-center justify-between">
                         <h3 class="font-semibold text-sm text-charcoal-800">Notifications</h3>
-                        <button class="text-xs text-rose-500 hover:text-rose-700">Mark all read</button>
+                        @if(auth()->user()->unreadNotifications->count() > 0)
+                            <form action="{{ route('notifications.mark-read') }}" method="POST">
+                                @csrf
+                                <button type="submit" class="text-xs text-rose-500 hover:text-rose-700">Mark all read</button>
+                            </form>
+                        @endif
                     </div>
                     <div class="max-h-80 overflow-y-auto">
-                        <div class="px-4 py-3 hover:bg-charcoal-50 transition-colors border-l-3 border-rose-500">
-                            <p class="text-sm font-medium text-charcoal-800">New lead assigned</p>
-                            <p class="text-xs text-charcoal-500 mt-0.5">2 minutes ago</p>
-                        </div>
-                        <div class="px-4 py-3 hover:bg-charcoal-50 transition-colors">
-                            <p class="text-sm font-medium text-charcoal-800">Follow-up reminder</p>
-                            <p class="text-xs text-charcoal-500 mt-0.5">15 minutes ago</p>
-                        </div>
-                    </div>
-                    <div class="px-4 py-2.5 border-t border-charcoal-100 text-center">
-                        <a href="#" class="text-xs text-rose-500 hover:text-rose-700 font-medium">View All</a>
+                        @forelse(auth()->user()->unreadNotifications as $notification)
+                            <a href="{{ $notification->data['url'] ?? '#' }}" class="block px-4 py-3 hover:bg-charcoal-50 transition-colors border-l-3 border-rose-500">
+                                <p class="text-sm font-medium text-charcoal-800">{{ $notification->data['title'] }}</p>
+                                <p class="text-xs text-charcoal-600 mt-1">{{ $notification->data['message'] }}</p>
+                                <p class="text-[10px] text-charcoal-400 mt-1">{{ $notification->created_at->diffForHumans() }}</p>
+                            </a>
+                        @empty
+                            <div class="px-4 py-6 text-center">
+                                <p class="text-sm text-charcoal-500">Tidak ada notifikasi baru.</p>
+                            </div>
+                        @endforelse
                     </div>
                 </div>
             </div>
@@ -78,7 +85,7 @@
 
                 <div x-show="open" @click.outside="open = false" x-cloak
                     class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-charcoal-200 overflow-hidden">
-                    <a href="#"
+                    <a href="{{ route('profile.edit') }}"
                         class="flex items-center gap-2 px-4 py-2.5 text-sm text-charcoal-700 hover:bg-charcoal-50">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

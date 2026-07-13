@@ -97,15 +97,58 @@
                     @if(!empty($log->old_values) || !empty($log->new_values))
                         <tr x-show="expanded === {{ $log->id }}" x-transition style="display: none;">
                             <td colspan="6" class="px-6 py-4 bg-charcoal-50 border-t border-b border-charcoal-200">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <h4 class="text-xs uppercase font-mono font-bold tracking-wider text-charcoal-500 mb-2">Before Changes</h4>
-                                        <pre class="bg-white border border-charcoal-200 p-4 rounded-xl text-xs text-charcoal-700 overflow-x-auto font-mono max-h-60">{{ json_encode($log->old_values, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
-                                    </div>
-                                    <div>
-                                        <h4 class="text-xs uppercase font-mono font-bold tracking-wider text-charcoal-500 mb-2">After Changes</h4>
-                                        <pre class="bg-white border border-charcoal-200 p-4 rounded-xl text-xs text-charcoal-700 overflow-x-auto font-mono max-h-60">{{ json_encode($log->new_values, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
-                                    </div>
+                                <div class="grid grid-cols-1 gap-2 max-w-4xl">
+                                    @php
+                                        $changedKeys = [];
+                                        if ($log->action === 'updated' && is_array($log->new_values)) {
+                                            $changedKeys = array_keys($log->new_values);
+                                        } elseif ($log->action === 'created' && is_array($log->new_values)) {
+                                            $changedKeys = array_keys($log->new_values);
+                                        } elseif ($log->action === 'deleted' && is_array($log->old_values)) {
+                                            $changedKeys = array_keys($log->old_values);
+                                        }
+                                    @endphp
+
+                                    @foreach($changedKeys as $key)
+                                        @php
+                                            $oldVal = $log->old_values[$key] ?? '-';
+                                            $newVal = $log->new_values[$key] ?? '-';
+                                            
+                                            if (is_array($oldVal)) $oldVal = 'Array/Object';
+                                            if (is_array($newVal)) $newVal = 'Array/Object';
+                                        @endphp
+                                        
+                                        <div class="flex items-center gap-4 bg-white p-3 rounded-xl border border-charcoal-100 shadow-sm">
+                                            <div class="w-1/4 shrink-0">
+                                                <span class="text-xs font-mono text-charcoal-500 font-semibold uppercase tracking-wider">{{ str_replace('_', ' ', $key) }}</span>
+                                            </div>
+                                            
+                                            <div class="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 overflow-hidden">
+                                                @if($log->action === 'updated')
+                                                    <div class="flex-1 px-3 py-2 bg-rose-50 border border-rose-100 text-rose-600 rounded-lg text-sm line-through truncate" title="{{ $oldVal }}">
+                                                        {{ $oldVal === '' || $oldVal === null ? '(Kosong)' : $oldVal }}
+                                                    </div>
+                                                    <div class="hidden sm:flex shrink-0 text-charcoal-300">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                                    </div>
+                                                    <div class="flex-1 px-3 py-2 bg-emerald-50 border border-emerald-100 text-emerald-700 font-medium rounded-lg text-sm truncate" title="{{ $newVal }}">
+                                                        {{ $newVal === '' || $newVal === null ? '(Kosong)' : $newVal }}
+                                                    </div>
+                                                @elseif($log->action === 'created')
+                                                    <div class="flex-1 px-3 py-2 bg-emerald-50 border border-emerald-100 text-emerald-700 font-medium rounded-lg text-sm truncate" title="{{ $newVal }}">
+                                                        {{ $newVal === '' || $newVal === null ? '(Kosong)' : $newVal }}
+                                                    </div>
+                                                @elseif($log->action === 'deleted')
+                                                    <div class="flex-1 px-3 py-2 bg-rose-50 border border-rose-100 text-rose-600 rounded-lg text-sm truncate" title="{{ $oldVal }}">
+                                                        {{ $oldVal === '' || $oldVal === null ? '(Kosong)' : $oldVal }}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                    @if(empty($changedKeys))
+                                        <div class="text-center py-4 text-charcoal-400 text-sm">Tidak ada detail perubahan (atau format data tidak didukung).</div>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

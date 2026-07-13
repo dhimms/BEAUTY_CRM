@@ -67,7 +67,16 @@ class Lead extends Model
 
     public function scopeFilterStatus($query, ?string $status)
     {
-        return $status ? $query->where('status', $status) : $query;
+        if ($status === 'all') {
+            return $query;
+        }
+
+        if ($status) {
+            return $query->where('status', $status);
+        }
+        
+        // By default, exclude leads that have been converted to Deals/Customers
+        return $query->where('status', '!=', 'converted');
     }
 
     public function scopeFilterSource($query, ?int $sourceId)

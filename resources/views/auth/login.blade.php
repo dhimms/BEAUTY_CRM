@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" class="h-full">
+<html lang="en" class="h-full">
 
 <head>
     <meta charset="UTF-8">
@@ -11,7 +11,12 @@
         href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {{-- Alpine.js --}}
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
+        [x-cloak] {
+            display: none !important;
+        }
         body {
             font-family: 'DM Sans', sans-serif;
         }
@@ -25,27 +30,26 @@
 <body class="h-full bg-cream">
     <div class="min-h-full flex">
         {{-- Left: Hero --}}
-        <div class="hidden lg:flex lg:w-1/2 relative bg-charcoal-900 items-center justify-center p-12 overflow-hidden">
-            <div class="absolute inset-0"
-                style="background: linear-gradient(135deg, #1A1A1A 0%, #2D1B2E 50%, #1A1A1A 100%);"></div>
-            <div class="absolute top-0 right-0 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl"></div>
-            <div class="absolute bottom-0 left-0 w-72 h-72 bg-amber-500/5 rounded-full blur-3xl"></div>
-            <div class="relative z-10 max-w-md">
-                <div
-                    class="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-rose-700 flex items-center justify-center mb-8">
-                    <span class="text-white font-serif font-bold text-2xl">B</span>
-                </div>
-                <h1 class="font-serif text-5xl font-light text-white leading-tight mb-4">
-                    Beauty<span class="text-rose-400">CRM</span>
-                </h1>
-                <p class="text-charcoal-400 text-lg leading-relaxed">
+        <div class="hidden lg:flex lg:w-1/2 relative bg-white items-center justify-center p-12 overflow-hidden border-r border-rose-100">
+            <!-- Decorative soft glowing shapes -->
+            <div class="absolute top-0 right-0 w-96 h-96 bg-rose-50 rounded-full blur-3xl opacity-60"></div>
+            <div class="absolute bottom-0 left-0 w-72 h-72 bg-rose-100 rounded-full blur-3xl opacity-40"></div>
+            
+            <div class="relative z-10 max-w-md flex flex-col items-start">
+                <!-- Logo Display (Seamless on white background) -->
+                <img src="{{ asset('images/logo.png') }}" alt="Beauty Clinic Logo" 
+                    class="mb-6 object-contain" style="width: 320px; height: auto;"
+                    onerror="this.src='https://ui-avatars.com/api/?name=Beauty+Clinic&background=F43F5E&color=fff'">
+                
+                <p class="text-charcoal-600 text-lg leading-relaxed font-medium mt-4">
                     Customer Relationship Management platform designed for the beauty and skincare industry.
                 </p>
-                <div class="mt-12 flex items-center gap-4 text-charcoal-500 text-sm">
+                
+                <div class="mt-12 flex items-center gap-4 text-charcoal-500 text-sm font-medium">
                     <div class="flex -space-x-2">
-                        <div class="w-8 h-8 rounded-full bg-rose-400/20 border-2 border-charcoal-800"></div>
-                        <div class="w-8 h-8 rounded-full bg-blue-400/20 border-2 border-charcoal-800"></div>
-                        <div class="w-8 h-8 rounded-full bg-emerald-400/20 border-2 border-charcoal-800"></div>
+                        <div class="w-8 h-8 rounded-full bg-rose-100 border-2 border-white"></div>
+                        <div class="w-8 h-8 rounded-full bg-blue-50 border-2 border-white"></div>
+                        <div class="w-8 h-8 rounded-full bg-emerald-50 border-2 border-white"></div>
                     </div>
                     <span>Admin, Sales, CS & Manager roles</span>
                 </div>
@@ -56,12 +60,12 @@
         <div class="flex-1 flex items-center justify-center p-8">
             <div class="w-full max-w-md">
                 {{-- Mobile Logo --}}
-                <div class="lg:hidden flex items-center gap-3 mb-10">
-                    <div
-                        class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-rose-700 flex items-center justify-center">
-                        <span class="text-white font-serif font-bold text-lg">B</span>
-                    </div>
-                    <span class="font-serif text-2xl font-semibold">BeautyCRM</span>
+                <div class="lg:hidden flex items-center gap-4 mb-10">
+                    <img src="{{ asset('images/logo.png') }}" alt="Beauty Clinic Logo" 
+                        class="w-16 h-16 object-contain" 
+                        style="mix-blend-mode: multiply;"
+                        onerror="this.src='https://ui-avatars.com/api/?name=Beauty+Clinic&background=F43F5E&color=fff'">
+                    <span class="font-serif text-3xl font-semibold text-charcoal-900">Beauty Clinic</span>
                 </div>
 
                 <h2 class="font-serif text-3xl font-semibold text-charcoal-900 mb-2">Welcome Back</h2>
@@ -119,14 +123,13 @@
                         </div>
                     </div>
 
-                    {{-- Remember & Forgot --}}
-                    <div class="flex items-center justify-between">
+                    {{-- Remember --}}
+                    <div class="flex items-center">
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" name="remember"
                                 class="w-4 h-4 rounded border-charcoal-300 text-rose-500 focus:ring-rose-500/20">
                             <span class="text-sm text-charcoal-600">Remember me</span>
                         </label>
-                        <a href="#" class="text-sm text-rose-500 hover:text-rose-700 font-medium">Forgot password?</a>
                     </div>
 
                     {{-- Submit --}}

@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\LeadRequest;
 use App\Models\Lead;
 use App\Models\LeadSource;
 use App\Models\User;
+use App\Notifications\LeadAssignedNotification;
 use Illuminate\Http\Request;
 
 class LeadController extends Controller
@@ -42,6 +43,11 @@ class LeadController extends Controller
     public function store(LeadRequest $request)
     {
         $lead = Lead::create($request->validated() + ['created_by' => auth()->id()]);
+        
+        if ($lead->assigned_to && $lead->assignedUser) {
+            $lead->assignedUser->notify(new LeadAssignedNotification($lead));
+        }
+        
         return redirect()->route('admin.leads.show', $lead)
             ->with('success', "Lead {$lead->name} berhasil dibuat.");
     }
@@ -61,7 +67,13 @@ class LeadController extends Controller
 
     public function update(LeadRequest $request, Lead $lead)
     {
+        $oldAssignedTo = $lead->assigned_to;
         $lead->update($request->validated());
+        
+        if ($lead->assigned_to && $lead->assigned_to !== $oldAssignedTo && $lead->assignedUser) {
+            $lead->assignedUser->notify(new LeadAssignedNotification($lead));
+        }
+
         return redirect()->route('admin.leads.show', $lead)
             ->with('success', "Lead {$lead->name} berhasil diperbarui.");
     }

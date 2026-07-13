@@ -40,10 +40,10 @@
             <thead>
                 <tr class="bg-charcoal-50/50">
                     <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Waktu</th>
-                    <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">User</th>
+                    <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Dilakukan Oleh</th>
                     <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Action</th>
-                    <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Module</th>
-                    <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Data yg Diubah</th>
+                    <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">ID Data</th>
                     <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Detail</th>
                 </tr>
             </thead>
@@ -63,17 +63,64 @@
                             <button @click="showDetail = !showDetail" class="text-amber-600 hover:text-amber-700 text-xs font-medium">
                                 <span x-text="showDetail ? 'Tutup' : 'Lihat'"></span>
                             </button>
-                            <div x-show="showDetail" x-cloak class="mt-2 p-3 bg-charcoal-50 rounded-lg text-xs">
-                                @if($log->old_values)
-                                    <p class="font-semibold text-charcoal-600 mb-1">Old:</p>
-                                    <pre class="text-charcoal-500 whitespace-pre-wrap break-all">{{ json_encode($log->old_values, JSON_PRETTY_PRINT) }}</pre>
-                                @endif
-                                @if($log->new_values)
-                                    <p class="font-semibold text-charcoal-600 mb-1 mt-2">New:</p>
-                                    <pre class="text-charcoal-500 whitespace-pre-wrap break-all">{{ json_encode($log->new_values, JSON_PRETTY_PRINT) }}</pre>
-                                @endif
+                            <div x-show="showDetail" x-cloak class="mt-3 p-4 bg-white border border-charcoal-200 rounded-xl shadow-sm text-xs relative">
+                                <div class="grid grid-cols-1 gap-2 max-w-4xl">
+                                    @php
+                                        $changedKeys = [];
+                                        if ($log->action === 'updated' && is_array($log->new_values)) {
+                                            $changedKeys = array_keys($log->new_values);
+                                        } elseif ($log->action === 'created' && is_array($log->new_values)) {
+                                            $changedKeys = array_keys($log->new_values);
+                                        } elseif ($log->action === 'deleted' && is_array($log->old_values)) {
+                                            $changedKeys = array_keys($log->old_values);
+                                        }
+                                    @endphp
+
+                                    @foreach($changedKeys as $key)
+                                        @php
+                                            $oldVal = $log->old_values[$key] ?? '-';
+                                            $newVal = $log->new_values[$key] ?? '-';
+                                            
+                                            if (is_array($oldVal)) $oldVal = 'Array/Object';
+                                            if (is_array($newVal)) $newVal = 'Array/Object';
+                                        @endphp
+                                        
+                                        <div class="flex items-center gap-4 bg-white p-3 rounded-xl border border-charcoal-100 shadow-sm">
+                                            <div class="w-1/4 shrink-0">
+                                                <span class="text-xs font-mono text-charcoal-500 font-semibold uppercase tracking-wider">{{ str_replace('_', ' ', $key) }}</span>
+                                            </div>
+                                            
+                                            <div class="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 overflow-hidden">
+                                                @if($log->action === 'updated')
+                                                    <div class="flex-1 px-3 py-2 bg-rose-50 border border-rose-100 text-rose-600 rounded-lg text-sm line-through truncate" title="{{ $oldVal }}">
+                                                        {{ $oldVal === '' || $oldVal === null ? '(Kosong)' : $oldVal }}
+                                                    </div>
+                                                    <div class="hidden sm:flex shrink-0 text-charcoal-300">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                                    </div>
+                                                    <div class="flex-1 px-3 py-2 bg-emerald-50 border border-emerald-100 text-emerald-700 font-medium rounded-lg text-sm truncate" title="{{ $newVal }}">
+                                                        {{ $newVal === '' || $newVal === null ? '(Kosong)' : $newVal }}
+                                                    </div>
+                                                @elseif($log->action === 'created')
+                                                    <div class="flex-1 px-3 py-2 bg-emerald-50 border border-emerald-100 text-emerald-700 font-medium rounded-lg text-sm truncate" title="{{ $newVal }}">
+                                                        {{ $newVal === '' || $newVal === null ? '(Kosong)' : $newVal }}
+                                                    </div>
+                                                @elseif($log->action === 'deleted')
+                                                    <div class="flex-1 px-3 py-2 bg-rose-50 border border-rose-100 text-rose-600 rounded-lg text-sm truncate" title="{{ $oldVal }}">
+                                                        {{ $oldVal === '' || $oldVal === null ? '(Kosong)' : $oldVal }}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                    @if(empty($changedKeys))
+                                        <div class="text-center py-4 text-charcoal-400 text-sm">Tidak ada detail perubahan (atau format data tidak didukung).</div>
+                                    @endif
+                                </div>
                                 @if($log->ip_address)
-                                    <p class="text-charcoal-400 mt-2">IP: {{ $log->ip_address }}</p>
+                                    <div class="mt-4 pt-3 border-t border-charcoal-100 flex items-center gap-4 text-charcoal-400 font-mono text-[10px]">
+                                        <span class="flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg> {{ $log->ip_address }}</span>
+                                    </div>
                                 @endif
                             </div>
                         </td>

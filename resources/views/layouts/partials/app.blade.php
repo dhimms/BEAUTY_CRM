@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" class="h-full">
+<html lang="en" class="h-full">
 
 <head>
     <meta charset="UTF-8">
@@ -70,7 +70,9 @@
     </style>
 </head>
 
-<body class="h-full text-charcoal-800 antialiased" x-data="{ sidebarOpen: true, sidebarMobile: false }">
+<body class="h-full text-charcoal-800 antialiased" 
+      x-data="{ sidebarOpen: true, sidebarMobile: false, isMobile: window.innerWidth < 1024 }" 
+      @resize.window="isMobile = window.innerWidth < 1024; if(!isMobile) sidebarMobile = false">
 
     {{-- Mobile Overlay --}}
     <div x-show="sidebarMobile" x-transition:enter="transition-opacity ease-linear duration-200"

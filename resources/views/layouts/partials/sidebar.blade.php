@@ -1,18 +1,23 @@
-{{-- resources/views/layouts/partials/sidebar.blade.php --}}
-<aside class="fixed inset-y-0 left-0 z-50 bg-charcoal-900 text-white sidebar-transition overflow-hidden flex flex-col"
-    :class="sidebarOpen ? 'w-64' : 'w-20'" x-show="true" x-transition>
+<!-- Safelist: w-64 w-20 -->
+<aside class="fixed inset-y-0 left-0 z-50 bg-charcoal-900 text-white sidebar-transition overflow-hidden flex flex-col transform"
+    :class="{
+        'w-64': sidebarOpen || sidebarMobile,
+        'w-20': !sidebarOpen && !sidebarMobile
+    }"
+    :style="isMobile && !sidebarMobile ? 'transform: translateX(-100%)' : 'transform: translateX(0)'">
 
     {{-- Brand --}}
     <div class="flex items-center h-16 px-4 border-b border-charcoal-700/50 flex-shrink-0">
         <div class="flex items-center gap-3 overflow-hidden">
-            <div
-                class="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 to-rose-700 flex items-center justify-center flex-shrink-0">
-                <span class="text-white font-serif font-bold text-lg">B</span>
+            <div class="w-10 h-10 flex-shrink-0 bg-white rounded-lg shadow-sm p-1 flex items-center justify-center">
+                <img src="{{ asset('images/logo.png') }}" alt="Beauty Clinic Logo" 
+                    class="w-full h-full object-contain" 
+                    onerror="this.src='https://ui-avatars.com/api/?name=Beauty+Clinic&background=F43F5E&color=fff'">
             </div>
             <span
                 class="font-serif font-semibold text-lg tracking-tight whitespace-nowrap transition-opacity duration-200"
                 :class="sidebarOpen ? 'opacity-100' : 'opacity-0 w-0'">
-                BeautyCRM
+                Beauty Clinic
             </span>
         </div>
     </div>
@@ -71,7 +76,7 @@
                 @if(auth()->user()->isAdmin() || auth()->user()->isSales() || auth()->user()->isManager())
                     <a href="{{ auth()->user()->isSales() ? route('sales.deals.pipeline') : (auth()->user()->isAdmin() ? route('admin.deals.index') : route('manager.pipeline.index')) }}"
                         class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
-                              {{ request()->routeIs('*deal*' || '*pipeline*') ? 'bg-rose-500/10 text-rose-400 border-l-3 border-rose-500' : 'text-charcoal-300 hover:text-white hover:bg-charcoal-800' }}">
+                              {{ request()->routeIs('*deal*', '*pipeline*') ? 'bg-rose-500/10 text-rose-400 border-l-3 border-rose-500' : 'text-charcoal-300 hover:text-white hover:bg-charcoal-800' }}">
                         <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                 d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />

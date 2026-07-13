@@ -10,8 +10,11 @@ use App\Models\Deal;
 use App\Models\Lead;
 use App\Models\LostReason;
 use App\Models\PipelineStage;
+use App\Models\User;
+use App\Notifications\DealWonNotification;
 use App\Services\DealService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 
 class DealController extends Controller
 {
@@ -155,6 +158,10 @@ class DealController extends Controller
 
         if ($request->outcome === 'won') {
             $this->dealService->closeWon($deal);
+            
+            $managersAndAdmins = User::role(['Admin', 'Manager'])->get();
+            Notification::send($managersAndAdmins, new DealWonNotification($deal));
+
             return redirect()->route('sales.deals.show', $deal)
                 ->with('success', 'Deal ditandai sebagai WON! Customer baru telah dibuat.');
         } else {

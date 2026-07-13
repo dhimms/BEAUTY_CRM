@@ -12,6 +12,12 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 // ─── Protected Routes ─────────────────────────────
 Route::middleware(['auth', 'active.user'])->group(function () {
 
+    // Profile routes
+    Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+
+    Route::post('/notifications/mark-read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
+
     // Dashboard redirect based on role
     Route::get('/dashboard', function () {
         $user = auth()->user();

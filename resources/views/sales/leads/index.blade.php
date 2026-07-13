@@ -43,7 +43,8 @@
                 <div>
                     <label class="block text-xs font-mono text-charcoal-400 uppercase mb-1">Status</label>
                     <select name="status" class="w-full px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 bg-white">
-                        <option value="">Semua Status</option>
+                        <option value="all" {{ request('status') === 'all' ? 'selected' : '' }}>Semua Status</option>
+                        <option value="" {{ request('status') === null ? 'selected' : '' }}>Lead Aktif (Exclude Converted)</option>
                         @foreach(config('beauty-crm.lead_statuses') as $key => $label)
                             <option value="{{ $key }}" {{ request('status') === $key ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
@@ -132,8 +133,8 @@
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <div x-data="{ open: false }" class="relative inline-block">
-                                    <button @click="open = !open" class="p-1.5 text-charcoal-400 hover:text-charcoal-600 hover:bg-charcoal-100 rounded-lg transition-colors">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01"/></svg>
+                                    <button @click="open = !open" class="p-2 text-charcoal-600 bg-white border border-charcoal-200 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 rounded-lg shadow-sm transition-all focus:ring-2 focus:ring-blue-500/20">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 5v.01M12 12v.01M12 19v.01"/></svg>
                                     </button>
                                     <div x-show="open" @click.outside="open = false" x-cloak
                                          class="absolute right-0 mt-1 w-44 bg-white rounded-xl shadow-lg border border-charcoal-200 overflow-hidden z-20">
