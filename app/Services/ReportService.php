@@ -19,31 +19,31 @@ class ReportService
 {
     // ─── Manager Dashboard ────────────────────────────
 
-    public function getManagerDashboard(): array
+    public function getManagerDashboard(string $period = 'all', ?string $startDate = null, ?string $endDate = null): array
     {
-        $totalLeads = Lead::count();
-        $totalDeals = Deal::count();
-        $wonDeals = Deal::won()->count();
-        $lostDeals = Deal::lost()->count();
+        $totalLeads = $this->applyPeriodFilter(Lead::query(), 'created_at', $period, $startDate, $endDate)->count();
+        $totalDeals = $this->applyPeriodFilter(Deal::query(), 'created_at', $period, $startDate, $endDate)->count();
+        $wonDeals = $this->applyPeriodFilter(Deal::won(), 'closed_at', $period, $startDate, $endDate)->count();
+        $lostDeals = $this->applyPeriodFilter(Deal::lost(), 'closed_at', $period, $startDate, $endDate)->count();
         $winRate = ($wonDeals + $lostDeals) > 0
             ? round(($wonDeals / ($wonDeals + $lostDeals)) * 100, 1)
             : 0;
-        $totalRevenue = Deal::won()->sum('value');
+        $totalRevenue = $this->applyPeriodFilter(Deal::won(), 'closed_at', $period, $startDate, $endDate)->sum('value');
 
         // Revenue trend 12 months
         $revenueTrend = $this->getRevenueTrend(12);
 
         // Funnel data
-        $funnel = $this->getFunnelData();
+        $funnel = $this->getFunnelData($period, $startDate, $endDate);
 
         // Sales performance comparison
-        $salesComparison = $this->getSalesComparison();
+        $salesComparison = $this->getSalesComparison($period, $startDate, $endDate);
 
         // Lead sources breakdown by month
         $leadSourcesMonthly = $this->getLeadSourcesMonthly(6);
 
         // Leaderboard
-        $leaderboard = $this->getTeamLeaderboard();
+        $leaderboard = $this->getTeamLeaderboard($period, $startDate, $endDate);
 
         return compact(
             'totalLeads',
@@ -235,15 +235,15 @@ class ReportService
 
     // ─── Team Leaderboard ─────────────────────────────
 
-    public function getTeamLeaderboard(): Collection
+    public function getTeamLeaderboard(string $period = 'all', ?string $startDate = null, ?string $endDate = null): Collection
     {
         $salesUsers = User::role('Sales')->where('is_active', true)->get();
 
-        return $salesUsers->map(function ($user) {
-            $wonDeals = Deal::where('assigned_to', $user->id)->won()->count();
-            $lostDeals = Deal::where('assigned_to', $user->id)->lost()->count();
-            $revenue = Deal::where('assigned_to', $user->id)->won()->sum('value');
-            $leads = Lead::where('assigned_to', $user->id)->count();
+        return $salesUsers->map(function ($user) use ($period, $startDate, $endDate) {
+            $wonDeals = $this->applyPeriodFilter(Deal::where('assigned_to', $user->id)->won(), 'closed_at', $period, $startDate, $endDate)->count();
+            $lostDeals = $this->applyPeriodFilter(Deal::where('assigned_to', $user->id)->lost(), 'closed_at', $period, $startDate, $endDate)->count();
+            $revenue = $this->applyPeriodFilter(Deal::where('assigned_to', $user->id)->won(), 'closed_at', $period, $startDate, $endDate)->sum('value');
+            $leads = $this->applyPeriodFilter(Lead::where('assigned_to', $user->id), 'created_at', $period, $startDate, $endDate)->count();
             $winRate = ($wonDeals + $lostDeals) > 0
                 ? round(($wonDeals / ($wonDeals + $lostDeals)) * 100, 1)
                 : 0;
@@ -412,12 +412,12 @@ class ReportService
         return $data;
     }
 
-    private function getFunnelData(): array
+    private function getFunnelData(string $period = 'all', ?string $startDate = null, ?string $endDate = null): array
     {
-        $totalLeads = Lead::count();
-        $qualified = Lead::where('qualification', 'qualified')->count();
-        $deals = Deal::count();
-        $won = Deal::won()->count();
+        $totalLeads = $this->applyPeriodFilter(Lead::query(), 'created_at', $period, $startDate, $endDate)->count();
+        $qualified = $this->applyPeriodFilter(Lead::where('qualification', 'qualified'), 'created_at', $period, $startDate, $endDate)->count();
+        $deals = $this->applyPeriodFilter(Deal::query(), 'created_at', $period, $startDate, $endDate)->count();
+        $won = $this->applyPeriodFilter(Deal::won(), 'closed_at', $period, $startDate, $endDate)->count();
 
         return [
             ['label' => 'Leads', 'value' => $totalLeads, 'color' => '#3B82F6'],
@@ -427,14 +427,14 @@ class ReportService
         ];
     }
 
-    private function getSalesComparison(): Collection
+    private function getSalesComparison(string $period = 'all', ?string $startDate = null, ?string $endDate = null): Collection
     {
         $salesUsers = User::role('Sales')->where('is_active', true)->get();
 
         return $salesUsers->map(fn($user) => [
             'name' => $user->name,
-            'deals' => Deal::where('assigned_to', $user->id)->count(),
-            'revenue' => (float) Deal::where('assigned_to', $user->id)->won()->sum('value'),
+            'deals' => $this->applyPeriodFilter(Deal::where('assigned_to', $user->id), 'created_at', $period, $startDate, $endDate)->count(),
+            'revenue' => (float) $this->applyPeriodFilter(Deal::where('assigned_to', $user->id)->won(), 'closed_at', $period, $startDate, $endDate)->sum('value'),
         ])->sortByDesc('revenue')->values();
     }
 
@@ -474,5 +474,23 @@ class ReportService
             'labels' => $labels,
             'datasets' => $datasets,
         ];
+    }
+
+    private function applyPeriodFilter($query, string $column, string $period, ?string $startDate = null, ?string $endDate = null)
+    {
+        if ($period === 'custom' && $startDate && $endDate) {
+            return $query->whereBetween($column, [
+                Carbon::parse($startDate)->startOfDay(), 
+                Carbon::parse($endDate)->endOfDay()
+            ]);
+        }
+
+        return match ($period) {
+            'today' => $query->whereDate($column, Carbon::today()),
+            'this_week' => $query->whereBetween($column, [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]),
+            'this_month' => $query->whereYear($column, Carbon::now()->year)->whereMonth($column, Carbon::now()->month),
+            'this_year' => $query->whereYear($column, Carbon::now()->year),
+            default => $query,
+        };
     }
 }

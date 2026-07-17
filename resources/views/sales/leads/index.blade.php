@@ -119,7 +119,21 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4">
-                                <x-badge :color="$lead->status_color" size="xs">{{ config("beauty-crm.lead_statuses.{$lead->status}", $lead->status) }}</x-badge>
+                                @php
+                                    $displayStatus = config("beauty-crm.lead_statuses.{$lead->status}", $lead->status);
+                                    $displayColor = $lead->status_color;
+                                    if ($lead->status === 'converted' && $lead->deals->isNotEmpty()) {
+                                        $latestDeal = $lead->deals->sortByDesc('created_at')->first();
+                                        if ($latestDeal->status === 'won') {
+                                            $displayStatus = 'Win';
+                                            $displayColor = 'blue';
+                                        } elseif ($latestDeal->status === 'lost') {
+                                            $displayStatus = 'Lost';
+                                            $displayColor = 'gray';
+                                        }
+                                    }
+                                @endphp
+                                <x-badge :color="$displayColor" size="xs">{{ strtoupper($displayStatus) }}</x-badge>
                             </td>
                             <td class="px-6 py-4 hidden lg:table-cell">
                                 @if($lead->qualification)

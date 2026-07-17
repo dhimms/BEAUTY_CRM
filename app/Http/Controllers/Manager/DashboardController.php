@@ -11,9 +11,16 @@ class DashboardController extends Controller
         private ReportService $reportService
     ) {}
 
-    public function index()
+    public function index(\Illuminate\Http\Request $request)
     {
-        $data = $this->reportService->getManagerDashboard();
+        $period = $request->get('period', 'all');
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
+        
+        $data = $this->reportService->getManagerDashboard($period, $startDate, $endDate);
+        $data['period'] = $period;
+        $data['startDate'] = $startDate;
+        $data['endDate'] = $endDate;
         return view('manager.dashboard.index', $data);
     }
 }

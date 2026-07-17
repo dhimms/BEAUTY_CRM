@@ -16,6 +16,8 @@ return [
         'qualified' => 'Potensial',
         'unqualified' => 'Tidak Potensial',
         'not_fit' => 'Tidak Cocok',
+        'win' => 'Win',
+        'lost' => 'Lost',
     ],
 
     'deal_statuses' => [

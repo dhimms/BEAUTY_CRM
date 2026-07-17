@@ -86,7 +86,17 @@ class Lead extends Model
 
     public function scopeFilterQualification($query, ?string $qualification)
     {
-        return $qualification ? $query->where('qualification', $qualification) : $query;
+        if (!$qualification) {
+            return $query;
+        }
+
+        if (in_array($qualification, ['win', 'lost'])) {
+            return $query->whereHas('deals', function ($q) use ($qualification) {
+                $q->where('status', $qualification === 'win' ? 'won' : 'lost');
+            });
+        }
+
+        return $query->where('qualification', $qualification);
     }
 
     public function scopeFilterAssigned($query, ?int $userId)
@@ -115,6 +125,8 @@ class Lead extends Model
             'qualified' => 'amber',
             'converted' => 'emerald',
             'closed' => 'gray',
+            'win' => 'blue',
+            'lost' => 'gray',
             default => 'gray',
         };
     }
@@ -125,6 +137,8 @@ class Lead extends Model
             'qualified' => 'emerald',
             'unqualified' => 'amber',
             'not_fit' => 'red',
+            'win' => 'blue',
+            'lost' => 'gray',
             default => 'gray',
         };
     }

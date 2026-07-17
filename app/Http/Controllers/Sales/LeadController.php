@@ -19,7 +19,7 @@ class LeadController extends Controller
             ->filterSource($request->source)
             ->filterQualification($request->qualification)
             ->search($request->search)
-            ->with(['source', 'assignedUser'])
+            ->with(['source', 'assignedUser', 'deals'])
             ->withCount('deals')
             ->latest()
             ->paginate(15)

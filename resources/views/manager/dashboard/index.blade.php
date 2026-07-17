@@ -4,6 +4,25 @@
 
 @section('page-header', 'Manager Dashboard')
 @section('page-subtitle', 'Ringkasan performa tim sales & bisnis')
+@section('page-actions')
+    <form method="GET" action="{{ route('manager.dashboard') }}" class="flex items-center gap-2" x-data="{ period: '{{ request('period', 'all') }}' }">
+        <select name="period" x-model="period" @change="if (period !== 'custom') $el.form.submit()" class="px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white font-medium text-charcoal-700">
+            <option value="all">Semua Waktu</option>
+            <option value="today">Hari Ini</option>
+            <option value="this_week">Minggu Ini</option>
+            <option value="this_month">Bulan Ini</option>
+            <option value="this_year">Tahun Ini</option>
+            <option value="custom">Pilih Tanggal</option>
+        </select>
+        
+        <div x-show="period === 'custom'" x-cloak class="flex items-center gap-2">
+            <input type="date" name="start_date" value="{{ request('start_date') }}" class="px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white" :required="period === 'custom'">
+            <span class="text-charcoal-400 font-medium">-</span>
+            <input type="date" name="end_date" value="{{ request('end_date') }}" class="px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white" :required="period === 'custom'">
+            <button type="submit" class="px-3 py-2 bg-charcoal-900 text-white rounded-xl text-sm font-medium hover:bg-charcoal-800 transition-colors">Terapkan</button>
+        </div>
+    </form>
+@endsection
 
 @section('content')
 {{-- KPI Cards --}}
