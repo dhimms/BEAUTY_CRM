@@ -34,7 +34,7 @@
 - 🎯 **Dirancang khusus** untuk alur kerja bisnis kecantikan
 - 👥 **Multi-role system** — Admin, Sales, Customer Service, dan Manager memiliki dashboard & akses masing-masing
 - 📊 **Pipeline Management** — Kelola deal dari prospecting hingga closing dengan drag & drop
-- 📈 **Laporan & Analisis** — Performa sales, revenue, analisis pipeline, dan banyak lagi
+- 📈 **Laporan & Analisis** — Performa sales, member acquisition, analisis pipeline, dan banyak lagi
 - 🔔 **Notifikasi Real-time** — Pemberitahuan otomatis saat lead di-assign atau deal berhasil closing
 - 📥 **Import/Export Excel** — Import lead secara massal dan export laporan ke Excel
 - 🔍 **Audit Trail** — Setiap perubahan data tercatat untuk keperluan audit
@@ -51,7 +51,7 @@
 - 12 jenis permission granular
 
 ### 👨‍💼 Panel Admin
-- **Dashboard** — Statistik keseluruhan (total leads, deals, revenue, conversion rate)
+- **Dashboard** — Statistik keseluruhan (total leads, deals, member baru, conversion rate)
 - **User Management** — CRUD user, assign role, aktifkan/nonaktifkan user
 - **Lead Management** — CRUD lead, assign ke sales, filter & pencarian
 - **Deal Management** — Lihat & kelola semua deal
@@ -88,14 +88,14 @@
 - **Pipeline Overview** — Visualisasi seluruh pipeline deal tim
 - **Reports Center** — Laporan komprehensif:
   - 📈 Sales Performance Report
-  - 💰 Revenue Report
+  - 👥 **Member Acquisition Report**
   - ❌ Lost Reasons Analysis
   - 🔗 Lead Sources Analysis
   - 🔄 Pipeline Analysis
   - 👥 Team Activity Report
 - **Export Report** — Export laporan ke Excel
 - **Team Performance** — Monitor performa individual tim sales
-- **Sales Forecast** — Prediksi pendapatan berdasarkan pipeline
+- **Sales Forecast** — Prediksi penambahan member berdasarkan pipeline
 - **Audit Logs** — Akses log audit
 
 ### 🔔 Sistem Notifikasi
@@ -107,7 +107,7 @@
 - Import lead massal via file Excel (.xlsx, .csv)
 - Download template import
 - Export data lead
-- Export laporan (Sales Performance, Revenue)
+- Export laporan (Sales Performance, Member Acquisition)
 
 ---
 
@@ -464,7 +464,7 @@ ServiceTickets ──< Activities (polymorphic)
 |-------|-----------|
 | `users` | Data pengguna sistem (name, email, phone, avatar, role) |
 | `leads` | Data lead/prospek (name, email, phone, source, status, qualification) |
-| `deals` | Data deal/transaksi (value, stage, status, expected close date) |
+| `deals` | Data deal/transaksi (lead_id, stage, status, expected close date) |
 | `customers` | Data pelanggan (name, email, phone, tags, status) |
 | `activities` | Log aktivitas (polymorphic: lead/deal/customer/ticket) |
 | `service_tickets` | Tiket layanan pelanggan (ticket number, category, priority, status) |
