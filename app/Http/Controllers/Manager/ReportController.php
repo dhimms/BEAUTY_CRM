@@ -28,7 +28,7 @@ class ReportController extends Controller
 
     public function revenue()
     {
-        $revenueData = $this->reportService->getRevenueReport(12);
+        $revenueData = $this->reportService->getMemberAcquisitionReport(12);
         return view('manager.reports.revenue', compact('revenueData'));
     }
 

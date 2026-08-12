@@ -15,7 +15,7 @@ class RevenueExport implements FromArray, WithHeadings, WithStyles, WithTitle
 
     public function __construct(ReportService $reportService)
     {
-        $this->data = $reportService->getRevenueReport(12);
+        $this->data = $reportService->getMemberAcquisitionReport(12);
     }
 
     public function array(): array
@@ -23,7 +23,6 @@ class RevenueExport implements FromArray, WithHeadings, WithStyles, WithTitle
         return array_map(function ($month) {
             return [
                 $month['month'],
-                $month['revenue'],
                 $month['deals_count'],
             ];
         }, $this->data['monthly']);
@@ -33,8 +32,7 @@ class RevenueExport implements FromArray, WithHeadings, WithStyles, WithTitle
     {
         return [
             'Bulan',
-            'Revenue (Rp)',
-            'Deals Won',
+            'Member Baru',
         ];
     }
 
@@ -47,6 +45,6 @@ class RevenueExport implements FromArray, WithHeadings, WithStyles, WithTitle
 
     public function title(): string
     {
-        return 'Revenue Report';
+        return 'Member Acquisition Report';
     }
 }

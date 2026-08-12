@@ -67,19 +67,6 @@
                 @enderror
             </div>
 
-            {{-- Value --}}
-            <div>
-                <label for="deal-value" class="block text-xs font-mono text-charcoal-400 uppercase mb-1">Nilai Deal (Rp) *</label>
-                <input type="number" id="deal-value" name="value"
-                       value="{{ old('value', 0) }}"
-                       required min="0" step="1000"
-                       class="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all"
-                       placeholder="0">
-                @error('value')
-                    <p class="text-xs text-rose-600 mt-1">{{ $message }}</p>
-                @enderror
-            </div>
-
             {{-- Pipeline Stage --}}
             <div>
                 <label for="deal-stage" class="block text-xs font-mono text-charcoal-400 uppercase mb-1">Pipeline Stage</label>

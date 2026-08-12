@@ -1,4 +1,4 @@
-﻿@extends('layouts.partials.app')
+@extends('layouts.partials.app')
 @section('title', 'Edit User: ' . $user->name)
 @section('breadcrumb')
     <li><a href="{{ route('admin.dashboard') }}" class="hover:text-charcoal-900 transition-colors">Dashboard</a></li>
@@ -13,7 +13,7 @@
 
 @section('content')
 <x-card class="max-w-3xl">
-    <form action="{{ route('admin.users.update', $user) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+    <form action="{{ route('admin.users.update', $user) }}" method="POST" enctype="multipart/form-data" class="space-y-6" x-data="{ role: '{{ old('role', $user->getRoleNames()->first()) }}' }">
         @csrf
         @method('PUT')
 
@@ -48,10 +48,10 @@
             </div>
             <div>
                 <label for="role" class="block text-sm font-medium text-charcoal-900 mb-1">Role <span class="text-rose-500">*</span></label>
-                <select name="role" id="role" required class="w-full px-4 py-2 bg-charcoal-50 border border-charcoal-200 rounded-xl focus:ring-rose-500 focus:border-rose-500 sm:text-sm" {{ $user->id === auth()->id() ? 'disabled' : '' }}>
+                <select name="role" id="role" x-model="role" required class="w-full px-4 py-2 bg-charcoal-50 border border-charcoal-200 rounded-xl focus:ring-rose-500 focus:border-rose-500 sm:text-sm" {{ $user->id === auth()->id() ? 'disabled' : '' }}>
                     <option value="">Select a role...</option>
-                    @foreach($roles as $role)
-                        <option value="{{ $role->name }}" {{ old('role', $user->getRoleNames()->first()) == $role->name ? 'selected' : '' }}>{{ $role->name }}</option>
+                    @foreach($roles as $role_option)
+                        <option value="{{ $role_option->name }}" {{ old('role', $user->getRoleNames()->first()) == $role_option->name ? 'selected' : '' }}>{{ $role_option->name }}</option>
                     @endforeach
                 </select>
                 @if($user->id === auth()->id())
@@ -59,6 +59,16 @@
                     <p class="mt-1 text-xs text-charcoal-400">You cannot change your own role.</p>
                 @endif
                 @error('role') <p class="mt-1 text-sm text-rose-500">{{ $message }}</p> @enderror
+            </div>
+        </div>
+
+        {{-- Sales Target (Conditional) --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" x-show="role === 'Sales'" x-transition x-cloak>
+            <div>
+                <label for="monthly_target" class="block text-sm font-medium text-charcoal-900 mb-1">Target Bulanan (Jumlah Member)</label>
+                <input type="number" name="monthly_target" id="monthly_target" value="{{ old('monthly_target', $user->monthly_target ?? 20) }}" min="1" class="w-full px-4 py-2 bg-charcoal-50 border border-charcoal-200 rounded-xl focus:ring-rose-500 focus:border-rose-500 sm:text-sm">
+                <p class="mt-1 text-xs text-charcoal-400">Hanya berlaku untuk posisi Sales.</p>
+                @error('monthly_target') <p class="mt-1 text-sm text-rose-500">{{ $message }}</p> @enderror
             </div>
         </div>
 

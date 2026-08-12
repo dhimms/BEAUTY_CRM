@@ -22,7 +22,7 @@ class DealService
             $deal = Deal::create([
                 'lead_id'            => $lead->id,
                 'name'               => $data['name'],
-                'value'              => $data['value'],
+                'value'              => 0,
                 'pipeline_stage_id'  => $data['pipeline_stage_id'] ?? $firstStage->id,
                 'status'             => 'open',
                 'expected_close_date'=> $data['expected_close_date'] ?? null,

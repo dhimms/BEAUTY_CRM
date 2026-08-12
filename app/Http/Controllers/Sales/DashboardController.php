@@ -29,12 +29,6 @@ class DashboardController extends Controller
             ->whereYear('closed_at', now()->year)
             ->count();
 
-        $myRevenue = Deal::where('assigned_to', $userId)
-            ->where('status', 'won')
-            ->whereMonth('closed_at', now()->month)
-            ->whereYear('closed_at', now()->year)
-            ->sum('value');
-
         // ─── Today's Follow-ups ─────────────────────────
         $todayFollowUps = Activity::where('user_id', $userId)
             ->where('follow_up_status', 'pending')
@@ -50,9 +44,6 @@ class DashboardController extends Controller
             ->withCount(['deals' => function ($q) use ($userId) {
                 $q->where('assigned_to', $userId)->where('status', 'open');
             }])
-            ->withSum(['deals' => function ($q) use ($userId) {
-                $q->where('assigned_to', $userId)->where('status', 'open');
-            }], 'value')
             ->get();
 
         // ─── Upcoming Follow-ups (next 7 days) ─────────
@@ -73,9 +64,9 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        // ─── Target vs Actual ───────────────────────────
-        $monthlyTarget = 50000000; // Rp 50jt default target
-        $monthlyActual = $myRevenue;
+        // ─── Target vs Actual (Jumlah Member) ───────────
+        $monthlyTarget = auth()->user()->monthly_target ?? 20;
+        $monthlyActual = $wonThisMonth;
         $targetPercent = $monthlyTarget > 0
             ? min(100, round(($monthlyActual / $monthlyTarget) * 100))
             : 0;
@@ -84,7 +75,6 @@ class DashboardController extends Controller
             'myLeadsCount',
             'myDealsCount',
             'wonThisMonth',
-            'myRevenue',
             'todayFollowUps',
             'pipelineSummary',
             'upcomingFollowUps',

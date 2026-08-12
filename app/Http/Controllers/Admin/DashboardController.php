@@ -33,14 +33,12 @@ class DashboardController extends Controller
             ->whereYear('closed_at', $prev->year)
             ->count();
 
-        $revenueThisMonth = Deal::won()
-            ->whereMonth('closed_at', $now->month)
-            ->whereYear('closed_at', $now->year)
-            ->sum('value');
-        $revenueLastMonth = Deal::won()
-            ->whereMonth('closed_at', $prev->month)
-            ->whereYear('closed_at', $prev->year)
-            ->sum('value');
+        $newMembersThisMonth = \App\Models\Customer::whereMonth('created_at', $now->month)
+            ->whereYear('created_at', $now->year)
+            ->count();
+        $newMembersLastMonth = \App\Models\Customer::whereMonth('created_at', $prev->month)
+            ->whereYear('created_at', $prev->year)
+            ->count();
 
         // Helper: hitung persentase trend
         $trendPercent = fn($curr, $prev) => $prev > 0
@@ -51,7 +49,7 @@ class DashboardController extends Controller
             'totalLeads'   => ['value' => $totalLeads,       'trend' => $trendPercent($totalLeads, $totalLeadsPrev),       'up' => $totalLeads >= $totalLeadsPrev],
             'activeDeals'  => ['value' => $activeDeals,      'trend' => $trendPercent($activeDeals, $activeDealsPrev),     'up' => $activeDeals >= $activeDealsPrev],
             'wonThisMonth' => ['value' => $wonThisMonth,     'trend' => $trendPercent($wonThisMonth, $wonLastMonth),       'up' => $wonThisMonth >= $wonLastMonth],
-            'revenue'      => ['value' => $revenueThisMonth, 'trend' => $trendPercent($revenueThisMonth, $revenueLastMonth), 'up' => $revenueThisMonth >= $revenueLastMonth],
+            'newMembers'   => ['value' => $newMembersThisMonth, 'trend' => $trendPercent($newMembersThisMonth, $newMembersLastMonth), 'up' => $newMembersThisMonth >= $newMembersLastMonth],
         ];
 
         // ─── Lead Trend (6 bulan terakhir) ────────────────────
@@ -99,11 +97,6 @@ class DashboardController extends Controller
                 ->whereMonth('closed_at', $now->month)
                 ->whereYear('closed_at', $now->year)
             ])
-            ->withSum(['assignedDeals as revenue_this_month' => fn($q) => $q
-                ->won()
-                ->whereMonth('closed_at', $now->month)
-                ->whereYear('closed_at', $now->year)
-            ], 'value')
             ->orderByDesc('won_this_month')
             ->limit(5)
             ->get();

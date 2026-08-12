@@ -28,8 +28,8 @@
         <x-kpi-card label="Won This Month" :value="$wonThisMonth" color="emerald"
             icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>' />
 
-        <x-kpi-card label="My Revenue" :value="'Rp ' . number_format($myRevenue, 0, ',', '.')" color="amber"
-            icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>' />
+        <x-kpi-card label="Target Tercapai" :value="$monthlyActual . '/' . $monthlyTarget . ' orang'" color="amber"
+            icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>' />
     </div>
 
     {{-- Target vs Actual + Pipeline Summary --}}
@@ -43,8 +43,8 @@
             </div>
             <div class="space-y-3">
                 <div class="flex justify-between text-sm">
-                    <span class="text-charcoal-600">Actual: <strong class="text-charcoal-900">Rp {{ number_format($monthlyActual, 0, ',', '.') }}</strong></span>
-                    <span class="text-charcoal-600">Target: <strong class="text-charcoal-900">Rp {{ number_format($monthlyTarget, 0, ',', '.') }}</strong></span>
+                    <span class="text-charcoal-600">Tercapai: <strong class="text-charcoal-900">{{ $monthlyActual }} orang</strong></span>
+                    <span class="text-charcoal-600">Target: <strong class="text-charcoal-900">{{ $monthlyTarget }} orang</strong></span>
                 </div>
                 <div class="w-full bg-charcoal-100 rounded-full h-4 overflow-hidden">
                     <div class="h-4 rounded-full transition-all duration-500 {{ $targetPercent >= 100 ? 'bg-emerald-500' : ($targetPercent >= 70 ? 'bg-blue-500' : ($targetPercent >= 40 ? 'bg-amber-500' : 'bg-rose-500')) }}"
@@ -73,11 +73,10 @@
                                 <span class="text-xs font-mono text-charcoal-500">{{ $stage->deals_count }} deal{{ $stage->deals_count != 1 ? 's' : '' }}</span>
                             </div>
                             <div class="w-full bg-charcoal-100 rounded-full h-1.5">
-                                @php $maxVal = (float)$pipelineSummary->max('deals_sum_value') ?: 1; @endphp
-                                <div class="h-1.5 rounded-full transition-all" style="width: {{ ((float)$stage->deals_sum_value / $maxVal) * 100 }}%; background-color: {{ $stage->color }}"></div>
+                                @php $maxCount = $pipelineSummary->max('deals_count') ?: 1; @endphp
+                                <div class="h-1.5 rounded-full transition-all" style="width: {{ ($stage->deals_count / $maxCount) * 100 }}%; background-color: {{ $stage->color }}"></div>
                             </div>
                         </div>
-                        <span class="text-xs font-medium text-charcoal-600 whitespace-nowrap">Rp {{ number_format($stage->deals_sum_value ?? 0, 0, ',', '.') }}</span>
                     </div>
                 @endforeach
             </div>

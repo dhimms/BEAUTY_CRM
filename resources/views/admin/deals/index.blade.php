@@ -43,7 +43,6 @@
                 <tr>
                     <th class="px-6 py-4 font-medium">Deal</th>
                     <th class="px-6 py-4 font-medium">Lead Contact</th>
-                    <th class="px-6 py-4 font-medium">Value</th>
                     <th class="px-6 py-4 font-medium">Stage</th>
                     <th class="px-6 py-4 font-medium text-right">Status</th>
                 </tr>
@@ -66,9 +65,7 @@
                             <a href="{{ route('admin.leads.show', $deal->lead) }}" class="text-blue-600 hover:underline font-medium">{{ $deal->lead->name }}</a>
                             <div class="text-xs text-charcoal-500 mt-1">{{ $deal->lead->phone }}</div>
                         </td>
-                        <td class="px-6 py-4 font-medium text-emerald-700">
-                            Rp {{ number_format($deal->value, 0, ',', '.') }}
-                        </td>
+
                         <td class="px-6 py-4">
                             <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium bg-charcoal-100 text-charcoal-800 border border-charcoal-200 whitespace-nowrap">
                                 <span class="w-2 h-2 rounded-full" style="background-color: {{ $deal->pipelineStage->color ?? '#F43F5E' }}"></span>
@@ -81,7 +78,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-8 text-center text-charcoal-500">
+                        <td colspan="4" class="px-6 py-8 text-center text-charcoal-500">
                             No deals found.
                         </td>
                     </tr>

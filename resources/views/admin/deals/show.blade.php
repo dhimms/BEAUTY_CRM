@@ -31,7 +31,6 @@
             <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
                 <div>
                     <h2 class="text-2xl font-serif font-bold text-charcoal-900">{{ $deal->name }}</h2>
-                    <p class="text-2xl font-semibold text-emerald-600 mt-2">Rp {{ number_format($deal->value, 0, ',', '.') }}</p>
                 </div>
                 <div class="flex flex-col items-end gap-2">
                     <x-badge :color="$deal->status_color" size="lg">{{ ucfirst($deal->status) }}</x-badge>

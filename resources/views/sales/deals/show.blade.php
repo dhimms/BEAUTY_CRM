@@ -121,14 +121,6 @@
                     <dd class="text-sm font-medium text-charcoal-800">{{ $deal->name }}</dd>
                 </div>
                 <div class="flex justify-between py-2 border-b border-charcoal-100">
-                    <dt class="text-sm text-charcoal-500">Value</dt>
-                    <dd class="text-sm font-semibold text-emerald-600 font-mono">{{ $deal->formatted_value }}</dd>
-                </div>
-                <div class="flex justify-between py-2 border-b border-charcoal-100">
-                    <dt class="text-sm text-charcoal-500">Weighted Value</dt>
-                    <dd class="text-sm font-medium text-charcoal-600 font-mono">Rp {{ number_format($deal->weighted_value, 0, ',', '.') }}</dd>
-                </div>
-                <div class="flex justify-between py-2 border-b border-charcoal-100">
                     <dt class="text-sm text-charcoal-500">Stage</dt>
                     <dd>
                         <span class="inline-flex items-center gap-1.5 text-xs font-medium">
@@ -338,10 +330,7 @@
                     <input type="text" name="name" value="{{ $deal->name }}" required class="w-full px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300">
                 </div>
 
-                <div>
-                    <label class="block text-xs font-mono text-charcoal-400 uppercase mb-1">Value (Rp) *</label>
-                    <input type="number" name="value" value="{{ $deal->value }}" required min="0" step="1000" class="w-full px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300">
-                </div>
+
 
                 <div>
                     <label class="block text-xs font-mono text-charcoal-400 uppercase mb-1">Expected Close Date</label>

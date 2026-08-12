@@ -26,7 +26,7 @@
 
 @section('content')
 {{-- KPI Cards --}}
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
     <x-kpi-card label="Total Leads" :value="number_format($totalLeads)" color="amber"
         icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>' />
 
@@ -47,16 +47,13 @@
             </div>
         </div>
     </div>
-
-    <x-kpi-card label="Revenue" :value="'Rp ' . number_format($totalRevenue, 0, ',', '.')" color="rose"
-        icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>' />
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-    {{-- Revenue Trend --}}
+    {{-- Member Trend --}}
     <x-card>
-        <h3 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Revenue Trend (12 Bulan)</h3>
-        <div style="height: 280px;"><canvas id="revenueTrendChart"></canvas></div>
+        <h3 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Member Baru (12 Bulan)</h3>
+        <div style="height: 280px;"><canvas id="memberTrendChart"></canvas></div>
     </x-card>
 
     {{-- Sales Funnel --}}
@@ -116,8 +113,7 @@
                     <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">#</th>
                     <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Sales</th>
                     <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Leads</th>
-                    <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Won</th>
-                    <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Revenue</th>
+                    <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Target</th>
                     <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Win Rate</th>
                 </tr>
             </thead>
@@ -143,13 +139,13 @@
                         </td>
                         <td class="px-6 py-4 text-right text-charcoal-600">{{ $member['leads'] }}</td>
                         <td class="px-6 py-4 text-right font-medium text-emerald-600">{{ $member['won'] }}</td>
-                        <td class="px-6 py-4 text-right font-mono text-charcoal-900">Rp {{ number_format($member['revenue'], 0, ',', '.') }}</td>
+                        <td class="px-6 py-4 text-right font-mono text-charcoal-900">{{ $member['target'] }}</td>
                         <td class="px-6 py-4 text-right">
                             <span class="font-medium {{ $member['win_rate'] >= 50 ? 'text-emerald-600' : 'text-charcoal-500' }}">{{ $member['win_rate'] }}%</span>
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="px-6 py-8 text-center text-charcoal-400">Belum ada data sales.</td></tr>
+                    <tr><td colspan="5" class="px-6 py-8 text-center text-charcoal-400">Belum ada data sales.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -175,15 +171,15 @@ document.addEventListener('DOMContentLoaded', function() {
         options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
     });
 
-    // Revenue Trend Area Chart
-    const revenueTrend = @json($revenueTrend);
-    new Chart(document.getElementById('revenueTrendChart'), {
+    // Member Trend Area Chart
+    const memberTrend = @json($memberTrend);
+    new Chart(document.getElementById('memberTrendChart'), {
         type: 'line',
         data: {
-            labels: revenueTrend.map(d => d.month),
+            labels: memberTrend.map(d => d.month),
             datasets: [{
-                label: 'Revenue',
-                data: revenueTrend.map(d => d.revenue),
+                label: 'Member Baru',
+                data: memberTrend.map(d => d.count),
                 borderColor: '#D97706',
                 backgroundColor: 'rgba(217, 119, 6, 0.1)',
                 fill: true,
@@ -197,7 +193,7 @@ document.addEventListener('DOMContentLoaded', function() {
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-                y: { beginAtZero: true, ticks: { callback: v => 'Rp ' + (v/1000000).toFixed(0) + 'M', font: { size: 11 } }, grid: { color: '#F3F4F6' } },
+                y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } }, grid: { color: '#F3F4F6' } },
                 x: { ticks: { font: { size: 11 } }, grid: { display: false } }
             }
         }
@@ -211,14 +207,14 @@ document.addEventListener('DOMContentLoaded', function() {
             labels: salesComp.map(d => d.name),
             datasets: [
                 { label: 'Deals', data: salesComp.map(d => d.deals), backgroundColor: '#F59E0B', borderRadius: 6 },
-                { label: 'Revenue (Jt)', data: salesComp.map(d => d.revenue / 1000000), backgroundColor: '#D97706', borderRadius: 6 },
+                { label: 'Won (Member)', data: salesComp.map(d => d.won), backgroundColor: '#10B981', borderRadius: 6 },
             ]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { labels: { font: { size: 11, family: 'DM Sans' }, usePointStyle: true } } },
             scales: {
-                y: { beginAtZero: true, grid: { color: '#F3F4F6' } },
+                y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#F3F4F6' } },
                 x: { grid: { display: false } }
             }
         }

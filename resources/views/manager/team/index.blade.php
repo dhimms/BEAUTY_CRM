@@ -18,7 +18,7 @@
                     <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Sales Person</th>
                     <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Leads</th>
                     <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Deals Won</th>
-                    <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Revenue</th>
+                    <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Target</th>
                     <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Win Rate</th>
                     <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Aksi</th>
                 </tr>
@@ -57,7 +57,7 @@
                             <span class="font-semibold text-emerald-600">{{ $member['won'] }}</span>
                         </td>
                         <td class="px-6 py-4 text-right font-mono font-semibold text-charcoal-900">
-                            Rp {{ number_format($member['revenue'], 0, ',', '.') }}
+                            {{ $member['target'] }}
                         </td>
                         <td class="px-6 py-4 text-right">
                             <div class="flex items-center justify-end gap-2">

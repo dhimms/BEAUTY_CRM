@@ -34,8 +34,7 @@ class SalesPerformanceExport implements FromCollection, WithHeadings, WithMappin
             'Won',
             'Lost',
             'Win Rate (%)',
-            'Revenue (Rp)',
-            'Avg Deal Value (Rp)',
+            'Target',
             'Activities',
         ];
     }
@@ -50,8 +49,7 @@ class SalesPerformanceExport implements FromCollection, WithHeadings, WithMappin
             $row['won'],
             $row['lost'],
             $row['win_rate'],
-            $row['revenue'],
-            $row['avg_deal_value'],
+            $row['target'],
             $row['activities'],
         ];
     }

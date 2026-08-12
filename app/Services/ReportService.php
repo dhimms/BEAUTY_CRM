@@ -28,10 +28,8 @@ class ReportService
         $winRate = ($wonDeals + $lostDeals) > 0
             ? round(($wonDeals / ($wonDeals + $lostDeals)) * 100, 1)
             : 0;
-        $totalRevenue = $this->applyPeriodFilter(Deal::won(), 'closed_at', $period, $startDate, $endDate)->sum('value');
-
-        // Revenue trend 12 months
-        $revenueTrend = $this->getRevenueTrend(12);
+        // Member trend 12 months
+        $memberTrend = $this->getMemberTrend(12);
 
         // Funnel data
         $funnel = $this->getFunnelData($period, $startDate, $endDate);
@@ -50,8 +48,7 @@ class ReportService
             'totalDeals',
             'wonDeals',
             'winRate',
-            'totalRevenue',
-            'revenueTrend',
+            'memberTrend',
             'funnel',
             'salesComparison',
             'leadSourcesMonthly',
@@ -75,9 +72,6 @@ class ReportService
                 ->map(fn($deal) => [
                     'id' => $deal->id,
                     'name' => $deal->name,
-                    'value' => $deal->value,
-                    'formatted_value' => $deal->formatted_value,
-                    'weighted_value' => $deal->weighted_value,
                     'lead_name' => $deal->lead?->name ?? '-',
                     'assigned_to' => $deal->assignedUser?->name ?? '-',
                     'expected_close' => $deal->expected_close_date?->format('d M Y'),
@@ -90,7 +84,6 @@ class ReportService
                 'color' => $stage->color,
                 'probability' => $stage->probability,
                 'deals' => $deals,
-                'total_value' => $deals->sum('value'),
                 'count' => $deals->count(),
             ];
         }
@@ -113,8 +106,7 @@ class ReportService
             $totalDeals = $deals->count();
             $wonDeals = (clone $deals)->won()->count();
             $lostDeals = (clone $deals)->lost()->count();
-            $revenue = (clone $deals)->won()->sum('value');
-            $avgDealValue = $wonDeals > 0 ? $revenue / $wonDeals : 0;
+            $target = $user->monthly_target ?? 20;
             $winRate = ($wonDeals + $lostDeals) > 0
                 ? round(($wonDeals / ($wonDeals + $lostDeals)) * 100, 1)
                 : 0;
@@ -140,28 +132,22 @@ class ReportService
                 'won' => $wonDeals,
                 'lost' => $lostDeals,
                 'win_rate' => $winRate,
-                'revenue' => $revenue,
-                'avg_deal_value' => $avgDealValue,
+                'target' => $target,
                 'activities' => $activities,
                 'avg_close_time' => $avgCloseTime,
             ];
-        })->sortByDesc('revenue')->values();
+        })->sortByDesc('won')->values();
     }
 
-    // ─── Revenue Report ───────────────────────────────
+    // ─── Member Acquisition Report ───────────────────────────────
 
-    public function getRevenueReport(int $months = 12): array
+    public function getMemberAcquisitionReport(int $months = 12): array
     {
         $data = [];
         $now = Carbon::now();
 
         for ($i = $months - 1; $i >= 0; $i--) {
             $date = $now->copy()->subMonths($i);
-            $revenue = Deal::won()
-                ->whereYear('closed_at', $date->year)
-                ->whereMonth('closed_at', $date->month)
-                ->sum('value');
-
             $dealsCount = Deal::won()
                 ->whereYear('closed_at', $date->year)
                 ->whereMonth('closed_at', $date->month)
@@ -170,17 +156,16 @@ class ReportService
             $data[] = [
                 'month' => $date->format('M Y'),
                 'month_short' => $date->format('M'),
-                'revenue' => (float) $revenue,
                 'deals_count' => $dealsCount,
             ];
         }
 
-        $totalRevenue = array_sum(array_column($data, 'revenue'));
-        $avgMonthly = $months > 0 ? $totalRevenue / $months : 0;
+        $totalMembers = array_sum(array_column($data, 'deals_count'));
+        $avgMonthly = $months > 0 ? $totalMembers / $months : 0;
 
         return [
             'monthly' => $data,
-            'total' => $totalRevenue,
+            'total' => $totalMembers,
             'average' => $avgMonthly,
         ];
     }
@@ -242,7 +227,7 @@ class ReportService
         return $salesUsers->map(function ($user) use ($period, $startDate, $endDate) {
             $wonDeals = $this->applyPeriodFilter(Deal::where('assigned_to', $user->id)->won(), 'closed_at', $period, $startDate, $endDate)->count();
             $lostDeals = $this->applyPeriodFilter(Deal::where('assigned_to', $user->id)->lost(), 'closed_at', $period, $startDate, $endDate)->count();
-            $revenue = $this->applyPeriodFilter(Deal::where('assigned_to', $user->id)->won(), 'closed_at', $period, $startDate, $endDate)->sum('value');
+            $target = $user->monthly_target ?? 20;
             $leads = $this->applyPeriodFilter(Lead::where('assigned_to', $user->id), 'created_at', $period, $startDate, $endDate)->count();
             $winRate = ($wonDeals + $lostDeals) > 0
                 ? round(($wonDeals / ($wonDeals + $lostDeals)) * 100, 1)
@@ -254,10 +239,10 @@ class ReportService
                 'avatar_url' => $user->avatar_url,
                 'leads' => $leads,
                 'won' => $wonDeals,
-                'revenue' => $revenue,
+                'target' => $target,
                 'win_rate' => $winRate,
             ];
-        })->sortByDesc('revenue')->values();
+        })->sortByDesc('won')->values();
     }
 
     // ─── Team Member Detail ───────────────────────────
@@ -276,27 +261,26 @@ class ReportService
         $wonDeals = (clone $deals)->won()->count();
         $lostDeals = (clone $deals)->lost()->count();
         $openDeals = (clone $deals)->open()->count();
-        $revenue = (clone $deals)->won()->sum('value');
-        $avgDealValue = $wonDeals > 0 ? $revenue / $wonDeals : 0;
+        $target = $user->monthly_target ?? 20;
         $winRate = ($wonDeals + $lostDeals) > 0
             ? round(($wonDeals / ($wonDeals + $lostDeals)) * 100, 1)
             : 0;
 
         $activities = Activity::where('user_id', $userId)->count();
 
-        // Monthly revenue trend for this user (6 months)
-        $monthlyRevenue = [];
+        // Monthly member trend for this user (6 months)
+        $monthlyWonCount = [];
         $now = Carbon::now();
         for ($i = 5; $i >= 0; $i--) {
             $date = $now->copy()->subMonths($i);
-            $rev = Deal::where('assigned_to', $userId)
+            $count = Deal::where('assigned_to', $userId)
                 ->won()
                 ->whereYear('closed_at', $date->year)
                 ->whereMonth('closed_at', $date->month)
-                ->sum('value');
-            $monthlyRevenue[] = [
+                ->count();
+            $monthlyWonCount[] = [
                 'month' => $date->format('M'),
-                'revenue' => (float) $rev,
+                'count' => $count,
             ];
         }
 
@@ -316,11 +300,10 @@ class ReportService
             'won' => $wonDeals,
             'lost' => $lostDeals,
             'open' => $openDeals,
-            'revenue' => $revenue,
-            'avg_deal_value' => $avgDealValue,
+            'target' => $target,
             'win_rate' => $winRate,
             'activities' => $activities,
-            'monthly_revenue' => $monthlyRevenue,
+            'monthly_won_count' => $monthlyWonCount,
             'recent_deals' => $recentDeals,
         ];
     }
@@ -391,21 +374,21 @@ class ReportService
 
     // ─── Private Helpers ──────────────────────────────
 
-    private function getRevenueTrend(int $months): array
+    private function getMemberTrend(int $months): array
     {
         $data = [];
         $now = Carbon::now();
 
         for ($i = $months - 1; $i >= 0; $i--) {
             $date = $now->copy()->subMonths($i);
-            $revenue = Deal::won()
+            $members = Deal::won()
                 ->whereYear('closed_at', $date->year)
                 ->whereMonth('closed_at', $date->month)
-                ->sum('value');
+                ->count();
 
             $data[] = [
                 'month' => $date->format('M'),
-                'revenue' => (float) $revenue,
+                'count' => $members,
             ];
         }
 
@@ -434,8 +417,8 @@ class ReportService
         return $salesUsers->map(fn($user) => [
             'name' => $user->name,
             'deals' => $this->applyPeriodFilter(Deal::where('assigned_to', $user->id), 'created_at', $period, $startDate, $endDate)->count(),
-            'revenue' => (float) $this->applyPeriodFilter(Deal::where('assigned_to', $user->id)->won(), 'closed_at', $period, $startDate, $endDate)->sum('value'),
-        ])->sortByDesc('revenue')->values();
+            'won' => $this->applyPeriodFilter(Deal::where('assigned_to', $user->id)->won(), 'closed_at', $period, $startDate, $endDate)->count(),
+        ])->sortByDesc('won')->values();
     }
 
     private function getLeadSourcesMonthly(int $months): array

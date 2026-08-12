@@ -68,7 +68,6 @@
                     <tr class="border-b border-charcoal-200 bg-charcoal-50/50">
                         <th class="text-left px-6 py-3 text-xs font-mono text-charcoal-400 uppercase tracking-wider">Deal</th>
                         <th class="text-left px-6 py-3 text-xs font-mono text-charcoal-400 uppercase tracking-wider hidden sm:table-cell">Lead</th>
-                        <th class="text-left px-6 py-3 text-xs font-mono text-charcoal-400 uppercase tracking-wider">Value</th>
                         <th class="text-left px-6 py-3 text-xs font-mono text-charcoal-400 uppercase tracking-wider hidden md:table-cell">Stage</th>
                         <th class="text-left px-6 py-3 text-xs font-mono text-charcoal-400 uppercase tracking-wider">Status</th>
                         <th class="text-left px-6 py-3 text-xs font-mono text-charcoal-400 uppercase tracking-wider hidden lg:table-cell">Expected Close</th>
@@ -89,9 +88,6 @@
                                 @else
                                     <span class="text-xs text-charcoal-400">-</span>
                                 @endif
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="font-mono font-semibold text-emerald-600">{{ $deal->formatted_value }}</span>
                             </td>
                             <td class="px-6 py-4 hidden md:table-cell">
                                 @if($deal->pipelineStage)
@@ -115,7 +111,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center">
+                            <td colspan="6" class="px-6 py-12 text-center">
                                 <svg class="w-12 h-12 text-charcoal-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/>
                                 </svg>

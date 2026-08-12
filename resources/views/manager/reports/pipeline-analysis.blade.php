@@ -16,7 +16,6 @@
                 <tr class="bg-charcoal-50/50">
                     <th class="px-6 py-3 text-left font-mono font-medium text-charcoal-500 uppercase">Stage</th>
                     <th class="px-6 py-3 text-right font-mono font-medium text-charcoal-500 uppercase">Total Deals</th>
-                    <th class="px-6 py-3 text-right font-mono font-medium text-charcoal-500 uppercase">Total Value</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-charcoal-100">
@@ -27,7 +26,6 @@
                             {{ $stage['name'] }}
                         </td>
                         <td class="px-6 py-4 text-right text-charcoal-600">{{ $stage['count'] }}</td>
-                        <td class="px-6 py-4 text-right font-mono text-emerald-600">Rp {{ number_format($stage['total_value'], 0, ',', '.') }}</td>
                     </tr>
                 @endforeach
             </tbody>

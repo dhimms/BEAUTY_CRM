@@ -73,24 +73,24 @@ Overview of BeautyCRM performance — {{ now()->translatedFormat("F Y") }}
             </div>
         </div>
 
-        {{-- Revenue This Month --}}
+        {{-- New Members This Month --}}
         <div class="bg-white rounded-xl border border-charcoal-200 shadow-sm p-5">
             <div class="flex items-start justify-between">
                 <div>
-                    <p class="text-xs font-mono uppercase tracking-wider text-charcoal-500 mb-1">Revenue Bulan Ini</p>
-                    <p class="text-2xl font-serif font-bold text-charcoal-900">Rp {{ number_format($kpi['revenue']['value'], 0, ',', '.') }}</p>
+                    <p class="text-xs font-mono uppercase tracking-wider text-charcoal-500 mb-1">Member Baru</p>
+                    <p class="text-3xl font-serif font-bold text-charcoal-900">{{ $kpi['newMembers']['value'] }}</p>
                 </div>
                 <div class="p-2.5 bg-rose-50 rounded-xl text-rose-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
                 </div>
             </div>
-            <div class="mt-3 flex items-center gap-1.5 text-xs font-medium {{ $kpi['revenue']['up'] ? 'text-emerald-600' : 'text-rose-600' }}">
-                @if($kpi['revenue']['up'])
+            <div class="mt-3 flex items-center gap-1.5 text-xs font-medium {{ $kpi['newMembers']['up'] ? 'text-emerald-600' : 'text-rose-600' }}">
+                @if($kpi['newMembers']['up'])
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
                 @else
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
                 @endif
-                {{ abs($kpi['revenue']['trend']) }}% vs bulan lalu
+                {{ abs($kpi['newMembers']['trend']) }}% vs bulan lalu
             </div>
         </div>
     </div>
@@ -167,7 +167,7 @@ Overview of BeautyCRM performance — {{ now()->translatedFormat("F Y") }}
                             <th class="px-4 py-3 font-medium">#</th>
                             <th class="px-4 py-3 font-medium">Sales Rep</th>
                             <th class="px-4 py-3 font-medium text-center">Won</th>
-                            <th class="px-4 py-3 font-medium text-right">Revenue</th>
+                            <th class="px-4 py-3 font-medium text-center">Target Bulanan</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-charcoal-100">
@@ -186,7 +186,7 @@ Overview of BeautyCRM performance — {{ now()->translatedFormat("F Y") }}
                                     </div>
                                 </td>
                                 <td class="px-4 py-3 text-center font-semibold text-emerald-600">{{ $sales->won_this_month }}</td>
-                                <td class="px-4 py-3 text-right text-charcoal-700 font-mono text-xs">Rp {{ number_format($sales->revenue_this_month, 0, ',', '.') }}</td>
+                                <td class="px-4 py-3 text-center text-charcoal-700 font-mono text-xs">{{ $sales->monthly_target ?? 20 }}</td>
                             </tr>
                         @empty
                             <tr>

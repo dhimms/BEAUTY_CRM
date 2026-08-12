@@ -43,7 +43,6 @@
                 <tr>
                     <th class="px-6 py-4 font-medium">Customer Info</th>
                     <th class="px-6 py-4 font-medium">Tags</th>
-                    <th class="px-6 py-4 font-medium">Lifetime Value</th>
                     <th class="px-6 py-4 font-medium">Status</th>
                     <th class="px-6 py-4 font-medium text-right">Actions</th>
                 </tr>
@@ -75,9 +74,7 @@
                                 <span class="text-charcoal-400 italic text-xs">No tags</span>
                             @endif
                         </td>
-                        <td class="px-6 py-4 text-charcoal-900 font-medium">
-                            Rp {{ number_format($customer->total_spent, 0, ',', '.') }}
-                        </td>
+
                         <td class="px-6 py-4">
                             <x-badge :color="$customer->status_color">{{ ucfirst($customer->status) }}</x-badge>
                         </td>
@@ -92,7 +89,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-8 text-center text-charcoal-500">
+                        <td colspan="4" class="px-6 py-8 text-center text-charcoal-500">
                             No customers found. Customers are created automatically when deals are won.
                         </td>
                     </tr>

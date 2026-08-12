@@ -158,7 +158,8 @@ class DealController extends Controller
 
         if ($request->outcome === 'won') {
             $this->dealService->closeWon($deal);
-            
+
+            $deal->load('assignedUser');
             $managersAndAdmins = User::role(['Admin', 'Manager'])->get();
             Notification::send($managersAndAdmins, new DealWonNotification($deal));
 

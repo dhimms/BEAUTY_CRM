@@ -25,6 +25,7 @@ class UserRequest extends FormRequest
             'phone'     => ['nullable', 'string', 'max:20'],
             'role'      => ['required', 'string', 'exists:roles,name'],
             'is_active' => ['boolean'],
+            'monthly_target' => ['nullable', 'integer', 'min:1'],
             'avatar'    => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'password'  => $isUpdate
                 ? ['nullable', 'confirmed', Password::min(8)]

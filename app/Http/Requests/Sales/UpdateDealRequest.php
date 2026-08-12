@@ -15,7 +15,6 @@ class UpdateDealRequest extends FormRequest
     {
         return [
             'name'                => 'required|string|max:255',
-            'value'               => 'required|numeric|min:0',
             'expected_close_date' => 'nullable|date',
         ];
     }
@@ -24,8 +23,6 @@ class UpdateDealRequest extends FormRequest
     {
         return [
             'name.required'  => 'Nama deal wajib diisi.',
-            'value.required' => 'Nilai deal wajib diisi.',
-            'value.numeric'  => 'Nilai deal harus berupa angka.',
         ];
     }
 }
