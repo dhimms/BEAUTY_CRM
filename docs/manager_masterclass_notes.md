@@ -6,7 +6,7 @@ Catatan ini dirancang sangat detail, lengkap dengan potongan kode dan penjelasan
 
 ---
 
-## 🎯 TAHAP 4: Dashboard & Team Performance
+## 🎯 TAHAP 4: Dashboard & Team Performance (Filter Waktu & Agregat)
 
 **Tujuan:** Memahami bagaimana sistem memfilter data berdasarkan waktu secara dinamis, melakukan perhitungan agregat (Total), dan menyusun Papan Peringkat (Leaderboard).
 
@@ -15,60 +15,69 @@ Ketika Manager membuka halaman dashboard dan memilih filter waktu (misal: "Bulan
 
 ```php
 // File: app/Http/Controllers/Manager/DashboardController.php
-public function index(\Illuminate\Http\Request $request)
+class DashboardController extends Controller
 {
-    // 1. Menangkap filter tanggal dari URL web (default: 'all')
-    $period = $request->get('period', 'all');
-    $startDate = $request->get('start_date');
-    $endDate = $request->get('end_date');
-    
-    // 2. Mendelegasikan perhitungan matematika yang rumit ke Koki (ReportService)
-    $data = $this->reportService->getManagerDashboard($period, $startDate, $endDate);
-    
-    // 3. Mengembalikan hasil hitungan ke layar (View)
-    $data['period'] = $period;
-    return view('manager.dashboard.index', $data);
+    public function index(\Illuminate\Http\Request $request)
+    {
+        // 1. Menerima Filter Tanggal: Menangkap filter 'period' dari URL (Misal: ?period=this_month)
+        // Jika tidak ada di URL, maka nilai default-nya adalah 'all' (Semua Waktu)
+        $period = $request->get('period', 'all');
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
+        
+        // 2. Mendelegasikan Tugas: Resepsionis melempar data filter ke Koki (ReportService)
+        $data = $this->reportService->getManagerDashboard($period, $startDate, $endDate);
+        
+        // 3. Mengembalikan Hasil: Mengirim data yang sudah dimasak ke tampilan layar (Blade)
+        $data['period'] = $period;
+        $data['startDate'] = $startDate;
+        $data['endDate'] = $endDate;
+        
+        return view('manager.dashboard.index', $data);
+    }
 }
 ```
 
-### 2. Senjata Rahasia Koki: Filter Waktu (applyPeriodFilter)
-Agar kita tidak perlu menulis ulang logika filter tanggal untuk setiap kotak metrik (Total Lead, Total Member, dll), kita membuat satu fungsi khusus pembantu.
+### 2. Senjata Rahasia Koki: Filter Waktu Otomatis
+Agar kita tidak perlu menulis ulang logika filter tanggal untuk setiap kotak metrik (Total Lead, Total Member, dll), kita membuat satu fungsi khusus pembantu (`applyPeriodFilter`).
 
 ```php
-// File: app/Services/ReportService.php
+// File: app/Services/ReportService.php (Fungsi Bantuan)
 private function applyPeriodFilter($query, string $column, string $period, ...)
 {
     // Fitur 'match' PHP 8. Mengecek apa isi filter yang dipilih Manager.
     return match ($period) {
-        // Jika filter "Hari Ini"
+        // Jika Manager memilih "Hari Ini", otomatis menempelkan instruksi SQL: 'where date = hari_ini'
         'today' => $query->whereDate($column, Carbon::today()),
         
-        // Jika filter "Minggu Ini"
+        // Jika Manager memilih "Minggu Ini", otomatis mencari di antara hari Senin s/d Minggu
         'this_week' => $query->whereBetween($column, [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]),
         
-        // Jika filter "Bulan Ini"
+        // Jika Manager memilih "Bulan Ini", otomatis mencari Tahun dan Bulan yang sama dengan sekarang
         'this_month' => $query->whereYear($column, Carbon::now()->year)->whereMonth($column, Carbon::now()->month),
         
-        // Jika tidak ada filter yang dipilih, jangan batasi tanggalnya.
+        // Jika default ('all'), kembalikan query mentahnya tanpa filter tanggal.
         default => $query,
     };
 }
 ```
 
 ### 3. Menghitung Metrik Kartu KPI (Agregat)
-Sistem menggunakan `count()` untuk menghitung baris data di database.
+Koki menggunakan senjata rahasia tadi untuk menghitung total angka secara efisien.
 
 ```php
 // File: app/Services/ReportService.php
 public function getManagerDashboard(string $period = 'all', ...)
 {
-    // MENGHITUNG TOTAL LEADS
-    // $this->applyPeriodFilter(...) akan otomatis menambahkan rumus tanggal ke dalam query Lead.
-    // Hasil akhirnya adalah sebuah Angka Total (misal: 150 Lead).
+    // MENGHITUNG TOTAL LEADS (Orang Baru)
+    // - Lead::query() mengambil semua data Lead
+    // - applyPeriodFilter akan menambahkan filter tanggal (Misal: Hanya bulan ini)
+    // - count() akan menghitung total jumlah orangnya di database
     $totalLeads = $this->applyPeriodFilter(Lead::query(), 'created_at', $period, ...)->count();
     
     // MENGHITUNG TOTAL KEMENANGAN (WON)
-    // Deal::won() adalah jalan pintas (Scope) untuk mencari transaksi berstatus "sukses".
+    // - Deal::won() adalah jalan pintas (Local Scope) untuk memfilter transaksi yang hanya berstatus 'won' (sukses)
+    // - count() menghitung jumlah keberhasilannya
     $wonDeals = $this->applyPeriodFilter(Deal::won(), 'closed_at', $period, ...)->count();
 
     // ...
@@ -82,25 +91,33 @@ Bagaimana sistem menyusun peringkat Sales terbaik bulan ini?
 // File: app/Services/ReportService.php
 public function getTeamLeaderboard(...)
 {
+    // 1. Ambil daftar semua user yang jabatannya adalah 'Sales'
     $salesUsers = User::role('Sales')->where('is_active', true)->get();
 
+    // 2. Looping (Perulangan) untuk menghitung statistik masing-masing Sales
     return $salesUsers->map(function ($user) use ($period, ...) {
+        
+        // Hitung total kemenangan (won) dan kekalahan (lost) khusus untuk Sales ini ($user->id)
         $wonDeals = $this->applyPeriodFilter(Deal::where('assigned_to', $user->id)->won(), ...)->count();
         $lostDeals = $this->applyPeriodFilter(Deal::where('assigned_to', $user->id)->lost(), ...)->count();
         
-        // LOGIKA PENCEGAH ERROR (Persentase Kemenangan)
-        // Kita tidak boleh membagi angka dengan 0 (Misal: 0/0). Itu akan membuat server meledak/crash.
-        // Oleh karena itu kita cek dulu apakah (won + lost) jumlahnya LEBIH DARI 0.
+        // 3. LOGIKA PENCEGAH ERROR (Persentase Kemenangan)
+        // Rumus Persentase = (Menang / Total Transaksi) * 100
+        // BAHAYA: Jika Sales baru belum punya data (won=0, lost=0), maka Total = 0.
+        // Komputer TIDAK BOLEH membagi angka dengan 0 (Division by Zero). Itu akan membuat server meledak/crash.
+        // Solusi: Kita cek dulu apakah (won + lost) jumlahnya LEBIH DARI 0!
         $winRate = ($wonDeals + $lostDeals) > 0
-            ? round(($wonDeals / ($wonDeals + $lostDeals)) * 100, 1) // Jika ada data, hitung rumusnya
-            : 0; // Jika datanya kosong (0), biarkan nilai win_rate jadi 0%
+            ? round(($wonDeals / ($wonDeals + $lostDeals)) * 100, 1) // Jika ada data > 0, jalankan rumus matematika
+            : 0; // Jika belum ada data (0), langsung berikan nilai 0% agar aman.
 
         return [
             'name' => $user->name,
-            'won' => $wonDeals,
+            'won' => $wonDeals, // Simpan total kemenangan
             'win_rate' => $winRate,
         ];
-    })->sortByDesc('won')->values(); // URUTKAN data dari peraih 'won' (kemenangan) tertinggi!
+        
+    // 4. Tahap Akhir: URUTKAN array data dari peraih 'won' (kemenangan) tertinggi ke terendah!
+    })->sortByDesc('won')->values(); 
 }
 ```
 
@@ -108,35 +125,46 @@ public function getTeamLeaderboard(...)
 
 ## 🎯 TAHAP 5: Pipeline Kanban & Forecast Member
 
-**Tujuan:** Memahami visualisasi papan Kanban dan memprediksi masa depan (*Forecasting*) menggunakan hitungan probabilitas (bukan halu!).
+**Tujuan:** Memahami visualisasi papan Kanban dan memprediksi masa depan (*Forecasting*) menggunakan hitungan probabilitas.
 
 ### 1. Papan Kanban
 Mengubah data tabel yang membosankan menjadi kolom-kolom proses (*Pipeline Stages*).
 
 ```php
 // File: app/Services/ReportService.php
+// Fitur kanban board (Mengelompokkan transaksi berdasarkan tahapannya)
 public function getPipelineData(): array
 {
-    // 1. Ambil daftar kolom (Misal: Prospecting, Proposal, Closing)
+    // 1. Mengambil semua "Kolom Status" (PipelineStage) (Misal: Prospecting, Proposal, Closing)
     $stages = PipelineStage::ordered()->get();
+    
     $pipeline = [];
-
+    
+    // 2. Lakukan perulangan untuk mengecek isi setiap kolom
     foreach ($stages as $stage) {
-        // 2. Ambil data pelanggan yang "tersangkut" (masih berstatus open) di kolom ini saja
+        
+        // 3. Ambil Deal (transaksi) yang nyangkut di kolom status ini
         $deals = Deal::with(['lead', 'assignedUser'])
             ->where('pipeline_stage_id', $stage->id)
-            ->where('status', 'open')
+            ->where('status', 'open') // Hanya yang masih berstatus terbuka/negosiasi
             ->orderBy('expected_close_date')
-            ->get();
+            ->get()
+            // 4. Ubah format datanya agar rapi dan mudah dibaca oleh tampilan Web
+            ->map(fn($deal) => [
+                'id' => $deal->id,
+                'name' => $deal->name,
+                // ...
+            ]);
 
-        // 3. Masukkan datanya ke dalam format kotak array
+        // 5. Masukkan data transaksi yang sudah difilter tadi ke dalam "Kotak Kolom" (Array)
         $pipeline[] = [
             'name' => $stage->name,
-            'probability' => $stage->probability, // Peluang (misal 50%)
-            'deals' => $deals,
-            'count' => $deals->count(), // Ada berapa orang di dalam kolom ini
+            'probability' => $stage->probability, // Peluang menang (Misal: 'Closing' probabilitasnya 90%)
+            'deals' => $deals, // Daftarnya
+            'count' => $deals->count(), // Total ada berapa orang di kolom ini
         ];
     }
+    
     return $pipeline;
 }
 ```
@@ -145,15 +173,17 @@ public function getPipelineData(): array
 **Aturan Baru Bisnis:** Sistem sudah tidak lagi memprediksi total *Uang* (Revenue), melainkan memprediksi total **Jumlah Orang** (Member Baru). 
 
 Bagaimana mencegah Manager berasumsi palsu (terlalu optimis)? Kita gunakan `Weighted Value` (Bobot Probabilitas).
-Misal: 1 calon pelanggan (Deal) di tahap Proposal hanya memiliki probabilitas 50%. Maka, ia tidak dihitung sebagai 1 orang penuh, melainkan hanya `1 * 50% = 0.5 orang`.
 
 ```php
 // File: app/Models/Deal.php
+// Fungsi untuk menghitung nilai bobot probabilitas dari 1 transaksi
 public function getWeightedValueAttribute(): float
 {
+    // Ambil persentase kemungkinan menang dari tahapan saat ini (Misal: Tahap Proposal = 50)
     $probability = $this->pipelineStage?->probability ?? 0;
+    
     // Bobot untuk 1 calon member (1 Deal = 1 Orang).
-    // Hasilnya adalah pecahan/desimal (misal 50/100 = 0.5)
+    // Hasilnya adalah pecahan/desimal (misal 50/100 = 0.5 Orang)
     return $probability / 100;
 }
 ```
@@ -161,26 +191,32 @@ public function getWeightedValueAttribute(): float
 Di dalam mesin laporannya:
 ```php
 // File: app/Services/ReportService.php
+// Function untuk meramal member baru berdasarkan data yang masuk
 public function getForecastData(): array
 {
-    // ... Looping berulang selama 12 bulan (masa lalu s.d. masa depan)
-    
-    // --- MASA LALU (Data Aktual) ---
-    // Hitung jumlah ORANG (count) yang sudah resmi menang di bulan tsb.
-    $actual = Deal::won()
-        ->whereYear('closed_at', $date->year)
-        ->whereMonth('closed_at', $date->month)
-        ->count();
+    // Looping 12 Bulan (5 bulan lalu, sekarang, 6 bulan ke depan)
+    for ($i = 5; $i >= -6; $i--) {
+        $date = $now->copy()->subMonths($i);
 
-    // --- MASA DEPAN (Data Proyeksi) ---
-    // Hitung calon target (orang) berdasarkan Bobot Probabilitas (weighted_value)
-    $projected = Deal::open()
-        ->whereYear('expected_close_date', $date->year)
-        ->whereMonth('expected_close_date', $date->month)
-        ->get()
-        ->sum(fn($deal) => $deal->weighted_value); // Jika ada 2 org @50%, totalnya jadi = 1 Orang.
-        
-    // ...
+        // --- 1. DATA AKTUAL (Masa Lalu) ---
+        // Hitung JUMLAH ORANG (count) yang SUDAH BERHASIL (won) gabung pada bulan tersebut.
+        $actual = Deal::won()
+            ->whereYear('closed_at', $date->year)
+            ->whereMonth('closed_at', $date->month)
+            ->count(); // Menggunakan count() karena kita menghitung orang, bukan uang.
+
+        // --- 2. DATA PROYEKSI (Masa Depan) ---
+        // Hitung prediksi member baru dari transaksi yg masih gantung (open) 
+        // dan rencana closingnya adalah di bulan tersebut.
+        $projected = Deal::open()
+            ->whereYear('expected_close_date', $date->year)
+            ->whereMonth('expected_close_date', $date->month)
+            ->get()
+            // Gunakan rumus matematika SUM untuk menjumlahkan semua Bobot Probabilitas (Weighted Value).
+            // Contoh: Jika ada 2 pelanggan di tahap Proposal (@50%), maka Prediksi = 0.5 + 0.5 = 1 Orang.
+            ->sum(fn($deal) => $deal->weighted_value); 
+            
+        // ...
 }
 ```
 
@@ -188,25 +224,25 @@ public function getForecastData(): array
 
 ## 🎯 TAHAP 6: Report Center (Pola Arsitektur yang Bersih)
 
-**Tujuan:** Menjaga kebersihan file *Controller* dan mendemonstrasikan keahlian tingkat lanjut meracik query SQL.
+**Tujuan:** Menjaga kebersihan file *Controller* (Service Pattern) dan mendemonstrasikan keahlian tingkat lanjut meracik query SQL.
 
 ### 1. Service Class Pattern (Koki di Balik Layar)
-Bayangkan jika semua logika rumit di Tahap 4 & 5 di atas ditulis di dalam file `ReportController`. File itu pasti akan panjangnya ribuan baris!
-Sebaliknya, inilah yang terjadi di aplikasi kita yang elegan:
-
 ```php
 // File: app/Http/Controllers/Manager/ReportController.php
 class ReportController extends Controller
 {
-    // Dependency Injection: Controller (Resepsionis) disuntikkan asisten Koki (ReportService)
+    // Ini disebut Dependency Injection. 
+    // Kita menyuntikkan Service (Koki) ke dalam Controller (Resepsionis).
+    // Tujuannya agar Controller tidak memuat perhitungan matematika/database yang berat.
     public function __construct(private ReportService $reportService) {}
 
     public function revenue()
     {
-        // Controller cukup memberikan instruksi 1 baris, biarkan Koki yang bekerja keras
-        // Catatan: Walaupun fungsinya bernama "revenue" (uang), namun di dalamnya sudah menghitung "Member".
+        // Meskipun nama fungsinya "revenue", kita sudah mengubah targetnya menjadi Member Baru.
+        // Di sini Controller cukup melempar tugas ke Service untuk menghitung tren selama 12 bulan terakhir.
         $revenueData = $this->reportService->getMemberAcquisitionReport(12);
         
+        // Hasil masakan Koki dikirim ke layar (Blade View)
         return view('manager.reports.revenue', compact('revenueData'));
     }
 }
@@ -217,21 +253,26 @@ Mencari alasan paling umum kenapa transaksi gagal. Ini menggunakan manipulasi *D
 
 ```php
 // File: app/Services/ReportService.php
+// Tahap 6: Analisis Kegagalan (Kenapa Pelanggan Batal?)
 public function getLostReasons(): array
 {
-    $totalLost = Deal::lost()->count(); // Hitung total kegagalan
+    // Hitung total keseluruhan orang yang gagal (Misal: 100 orang)
+    $totalLost = Deal::lost()->count(); 
 
     $reasons = Deal::lost()
+        // Pastikan transaksi ini memang memiliki ID alasan batal
         ->whereNotNull('lost_reason_id')
         
         // 1. GABUNGKAN (JOIN): Gabungkan tabel Deal dengan tabel lost_reasons 
-        // untuk mengambil nama alasannya (Misal: "Fasilitas Kurang")
+        // untuk mengambil nama alasannya dari database (Misal: ID 2 = "Kemahalan")
         ->join('lost_reasons', 'deals.lost_reason_id', '=', 'lost_reasons.id')
         
-        // 2. KELOMPOKKAN (GROUP BY): Kelompokkan berdasarkan alasan yang sama (Mirip fungsi Pivot di Excel)
+        // 2. KELOMPOKKAN (GROUP BY): Kelompokkan berdasarkan nama alasan (Mirip fitur Pivot Table di Excel)
         ->selectRaw('lost_reasons.name, COUNT(*) as count')
         ->groupBy('lost_reasons.name')
-        ->orderByDesc('count') // 3. URUTKAN: Dari yang paling sering muncul
+        
+        // 3. URUTKAN: Dari alasan yang paling sering muncul (Highest count)
+        ->orderByDesc('count') 
         ->get()
         
         // 4. HITUNG PERSENTASE (Jika 30 org beralasan sama dari total 100 batal = 30%)
@@ -256,65 +297,68 @@ Aplikasi menggunakan library pihak ketiga `Maatwebsite\Excel`. Agar kode rapi, l
 
 ```php
 // File: app/Exports/RevenueExport.php
-// "implements" berarti menandatangani kontrak. 
-// Kontrak mewajibkan kita membuat fungsi array(), headings(), dan styles()
+// Class ini menandatangani "Kontrak Kerja" (Interfaces) dari library Maatwebsite\Excel
+// Kontrak ini mewajibkan class memiliki fungsi-fungsi khusus: array(), headings(), styles()
 class RevenueExport implements FromArray, WithHeadings, WithStyles, WithTitle
 {
     protected $data;
 
     public function __construct(ReportService $reportService) {
-        $this->data = $reportService->getMemberAcquisitionReport(12); // Panggil Koki
+        // Saat diekspor, ambil data laporan 12 bulan terakhir
+        $this->data = $reportService->getMemberAcquisitionReport(12); 
     }
 
-    // FUNGSI WAJIB KONTRAK 1: Menyusun isi baris data (FromArray)
+    // FUNGSI WAJIB KONTRAK 1: KONTRAK ISI DATA (FromArray)
+    // Fungsi ini wajib mengembalikan susunan data per baris di Excel
     public function array(): array {
         return array_map(function ($month) {
             return [
-                $month['month'],          // Kolom A (Misal: Jan 2026)
-                $month['deals_count'],    // Kolom B (Misal: 45)
+                $month['month'],          // Kolom A Excel (Misal: Jan 2026)
+                $month['deals_count'],    // Kolom B Excel (Misal: 45)
             ];
-        }, $this->data['monthly']);
+        }, $this->data['monthly']); // Lakukan perulangan untuk setiap bulannya
     }
 
-    // FUNGSI WAJIB KONTRAK 2: Menyusun Judul Kolom (WithHeadings)
+    // FUNGSI WAJIB KONTRAK 2: KONTRAK JUDUL KOLOM / HEADER (WithHeadings)
+    // Baris pertama di Excel (A1, B1) akan diisi oleh tulisan ini
     public function headings(): array {
         return ['Bulan', 'Member Baru'];
     }
 
-    // FUNGSI WAJIB KONTRAK 3: Menghias Excel (WithStyles)
+    // FUNGSI WAJIB KONTRAK 3: KONTRAK MENGHIAS EXCEL (WithStyles)
+    // Digunakan untuk menebalkan (Bold) baris ke-1 (Header)
     public function styles(Worksheet $sheet): array {
         return [
-            1 => ['font' => ['bold' => true, 'size' => 11]], // Jadikan tulisan baris ke-1 (Header) tebal!
+            1 => ['font' => ['bold' => true, 'size' => 11]], 
         ];
     }
 }
 ```
-Untuk mengunduh, *Controller* cukup mengeksekusi satu baris pendek:
-`Excel::download(new RevenueExport($this->reportService), "laporan.xlsx")`
 
 ### 2. Audit Log (CCTV Rahasia)
 Sistem memiliki rekaman jejak digital (Audit Trail). Setiap kali data disimpan/dihapus oleh karyawan, sistem otomatis merekam: Siapa, Apa, di Mana, dan Kapan hal itu dilakukan.
-Manager bisa mengakses riwayat CCTV ini di *AuditLogController*.
 
 ```php
 // File: app/Http/Controllers/Manager/AuditLogController.php
 class AuditLogController extends Controller
 {
+    // Tahap 7: Audit Log (CCTV Aplikasi)
+    // Fitur ini digunakan Manager untuk melacak "Jejak Digital" (Siapa mengubah apa dan kapan)
     public function index(Request $request)
     {
-        // Manager menggunakan Filter di web (Mencari berdasarkan Nama Karyawan atau Modul tertentu)
+        // Manager menggunakan Filter di web (Mencari berdasarkan Aksi / Nama Karyawan / Modul tertentu)
         // Request dilempar ke ReportService untuk dicari dari database.
         $logs = $this->reportService->getAuditLogs(
             $request->only(['action', 'user_id', 'module'])
         );
         
+        // Mengambil daftar karyawan untuk ditampilkan di *dropdown* filter pencarian web
         $users = User::where('is_active', true)->orderBy('name')->get();
 
         return view('manager.audit-logs.index', compact('logs', 'users'));
     }
 }
 ```
-*(Dengan fitur ini, tidak ada karyawan yang bisa menghindari tanggung jawab jika ada data yang tak sengaja terhapus!)*
 
 ---
 > 💡 **Kata-kata dari Coach:** 
