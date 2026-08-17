@@ -25,7 +25,7 @@ class RoleSeeder extends Seeder
             'manage leads',
             'manage deals',
             'manage customers',
-            'manage tickets',
+
             'manage activities',
             'manage pipeline',
             'manage sources',
@@ -49,7 +49,7 @@ class RoleSeeder extends Seeder
 
         // Assign permissions to CS
         $cs = Role::findByName('Customer Service');
-        $cs->givePermissionTo(['manage customers', 'manage tickets', 'manage activities']);
+        $cs->givePermissionTo(['manage customers', 'manage activities']);
 
         // Assign permissions to Manager
         $manager = Role::findByName('Manager');

@@ -11,7 +11,7 @@
 @endsection
 
 @section('content')
-<div x-data="{ activeTab: 'history', showEditModal: false, showActivityModal: false }">
+<div x-data="{ activeTab: 'activity', showEditModal: false, showActivityModal: false }">
     {{-- Customer Header Card --}}
     <div class="bg-white rounded-xl border border-charcoal-200 shadow-sm p-6 mb-6">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -53,9 +53,7 @@
     {{-- Tabs --}}
     <div class="mb-6">
         <div class="flex gap-1 bg-charcoal-100 rounded-xl p-1 max-w-md">
-            <button @click="activeTab = 'history'"
-                :class="activeTab === 'history' ? 'bg-white shadow-sm text-charcoal-900' : 'text-charcoal-500 hover:text-charcoal-700'"
-                class="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all">Service History</button>
+
             <button @click="activeTab = 'activity'"
                 :class="activeTab === 'activity' ? 'bg-white shadow-sm text-charcoal-900' : 'text-charcoal-500 hover:text-charcoal-700'"
                 class="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all">Activity Log</button>
@@ -65,46 +63,6 @@
         </div>
     </div>
 
-    {{-- Tab: Service History --}}
-    <div x-show="activeTab === 'history'" x-cloak>
-        <x-card :padding="false">
-            <div class="p-4 border-b border-charcoal-100">
-                <h3 class="font-serif text-lg font-semibold text-charcoal-900">Service Tickets</h3>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="bg-charcoal-50/50">
-                            <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">No. Ticket</th>
-                            <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Judul</th>
-                            <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Priority</th>
-                            <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">CS</th>
-                            <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Tanggal</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-charcoal-100">
-                        @forelse($customer->serviceTickets as $ticket)
-                            <tr class="hover:bg-charcoal-50/30 transition-colors">
-                                <td class="px-6 py-4">
-                                    <a href="{{ route('cs.tickets.show', $ticket) }}" class="font-mono text-emerald-600 hover:text-emerald-700 font-medium">{{ $ticket->ticket_number }}</a>
-                                </td>
-                                <td class="px-6 py-4 text-charcoal-900 font-medium">{{ $ticket->title }}</td>
-                                <td class="px-6 py-4"><x-badge :color="$ticket->priority_color" size="xs">{{ ucfirst($ticket->priority) }}</x-badge></td>
-                                <td class="px-6 py-4"><x-badge :color="$ticket->status_color" size="xs">{{ config('beauty-crm.ticket_statuses.' . $ticket->status) }}</x-badge></td>
-                                <td class="px-6 py-4 text-charcoal-600 text-xs">{{ $ticket->assignedUser?->name ?? '-' }}</td>
-                                <td class="px-6 py-4 text-charcoal-500 text-xs">{{ $ticket->created_at->format('d M Y') }}</td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="px-6 py-8 text-center text-charcoal-400">Belum ada service ticket.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </x-card>
-    </div>
 
     {{-- Tab: Activity Log --}}
     <div x-show="activeTab === 'activity'" x-cloak>

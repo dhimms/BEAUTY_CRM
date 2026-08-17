@@ -43,27 +43,6 @@ return [
         'wrong_number' => 'Wrong Number',
     ],
 
-    'ticket_statuses' => [
-        'open' => 'Open',
-        'in_progress' => 'In Progress',
-        'resolved' => 'Resolved',
-        'closed' => 'Closed',
-    ],
-
-    'ticket_priorities' => [
-        'low' => 'Low',
-        'medium' => 'Medium',
-        'high' => 'High',
-        'urgent' => 'Urgent',
-    ],
-
-    'ticket_categories' => [
-        'complaint' => 'Complaint',
-        'question' => 'Question',
-        'request' => 'Request',
-        'feedback' => 'Feedback',
-        'technical' => 'Technical Issue',
-    ],
 
     'roles' => [
         'admin' => 'Admin',

@@ -47,10 +47,6 @@ class Customer extends Model
         return $this->morphMany(Activity::class, 'activitable');
     }
 
-    public function serviceTickets()
-    {
-        return $this->hasMany(ServiceTicket::class);
-    }
 
     // ─── Scopes ──────────────────────────────────────
 

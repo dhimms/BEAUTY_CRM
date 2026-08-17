@@ -59,10 +59,6 @@ class User extends Authenticatable
         return $this->hasMany(Customer::class);
     }
 
-    public function assignedTickets()
-    {
-        return $this->hasMany(ServiceTicket::class, 'assigned_to');
-    }
 
     public function auditLogs()
     {
@@ -81,6 +77,7 @@ class User extends Authenticatable
         return $this->hasRole('Sales');
     }
 
+    //  method isCS() digunakan untuk mengecek apakah user memiliki role Customer Service
     public function isCS(): bool
     {
         return $this->hasRole('Customer Service');

@@ -19,6 +19,8 @@ Route::middleware(['auth', 'active.user'])->group(function () {
     Route::post('/notifications/mark-read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
 
     // Dashboard redirect based on role
+    // setiap user yg akan login akan masuk ke sini dan di redirect sesuai role nya
+    // misal role cs akan masuk ke dashboard cs, role manager akan masuk ke dashboard manager
     Route::get('/dashboard', function () {
         $user = auth()->user();
         return match (true) {
@@ -31,6 +33,7 @@ Route::middleware(['auth', 'active.user'])->group(function () {
     })->name('dashboard');
 
     // Include role-specific route files
+    // digunakan untuk memisahkan route berdasarkan role misal admin.php berisi route untuk admin, cs.php berisi route untuk cs, dst
     require __DIR__ . '/admin.php';
     require __DIR__ . '/sales.php';
     require __DIR__ . '/cs.php';

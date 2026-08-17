@@ -14,7 +14,7 @@ class StoreActivityRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'activitable_type' => 'required|in:customer,ticket',
+            'activitable_type' => 'required|in:customer',
             'activitable_id' => 'required|integer',
             'type' => 'required|in:' . implode(',', array_keys(config('beauty-crm.activity_types'))),
             'subject' => 'nullable|string|max:255',

@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Activity;
 use App\Models\Customer;
-use App\Models\ServiceTicket;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -20,7 +19,6 @@ class CustomerService
 
         $totalCustomers = Customer::count();
         $activeCustomers = Customer::active()->count();
-        $openTickets = ServiceTicket::open()->count();
 
         $todayFollowUps = Activity::with(['user', 'activitable'])
             ->whereNotNull('follow_up_date')
@@ -33,17 +31,13 @@ class CustomerService
             ->overdueFollowUps()
             ->get();
 
-        $recentTickets = ServiceTicket::with(['customer', 'assignedUser'])
-            ->latest()
-            ->take(5)
+        $upcomingFollowUps = Activity::with(['user', 'activitable'])
+            ->whereNotNull('follow_up_date')
+            ->where('follow_up_status', 'pending')
+            ->whereDate('follow_up_date', '>', $today)
+            ->orderBy('follow_up_date')
+            ->take(10) // Limit to 10 upcoming for the dashboard
             ->get();
-
-        // Ticket by priority for doughnut chart
-        $ticketsByPriority = ServiceTicket::open()
-            ->selectRaw("priority, COUNT(*) as count")
-            ->groupBy('priority')
-            ->pluck('count', 'priority')
-            ->toArray();
 
         $newCustomersThisMonth = Customer::whereNotNull('lead_id')
             ->whereMonth('created_at', $today->month)
@@ -53,11 +47,9 @@ class CustomerService
         return compact(
             'totalCustomers',
             'activeCustomers',
-            'openTickets',
             'todayFollowUps',
             'overdueFollowUps',
-            'recentTickets',
-            'ticketsByPriority',
+            'upcomingFollowUps',
             'newCustomersThisMonth'
         );
     }
@@ -94,84 +86,27 @@ class CustomerService
         return $customer->fresh();
     }
 
+    // digunakan untuk mengatasi masalah performa N+1
+    // karena jika tidak menggunakan eager loading maka akan terjadi N+1 query
     public function getCustomerDetail(int $id): Customer
     {
         return Customer::with([
             'csUser',
             'lead',
-            'serviceTickets' => fn($q) => $q->with('assignedUser')->latest(),
-            'activities' => fn($q) => $q->with('user')->latest(),
-        ])->findOrFail($id);
-    }
-
-    // ─── Service Tickets ──────────────────────────────
-
-    public function getTickets(array $filters = []): LengthAwarePaginator
-    {
-        return ServiceTicket::with(['customer', 'assignedUser'])
-            ->search($filters['search'] ?? null)
-            ->when($filters['status'] ?? null, fn($q, $s) => $q->where('status', $s))
-            ->when($filters['priority'] ?? null, fn($q, $p) => $q->where('priority', $p))
-            ->when($filters['category'] ?? null, fn($q, $c) => $q->where('category', $c))
-            ->when($filters['assigned_to'] ?? null, fn($q, $a) => $q->where('assigned_to', $a))
-            ->latest()
-            ->paginate(15)
-            ->withQueryString();
-    }
-
-    public function createTicket(array $data): ServiceTicket
-    {
-        return ServiceTicket::create($data);
-    }
-
-    public function updateTicket(ServiceTicket $ticket, array $data): ServiceTicket
-    {
-        $ticket->update($data);
-        return $ticket->fresh();
-    }
-
-    public function deleteTicket(ServiceTicket $ticket): bool
-    {
-        return $ticket->delete();
-    }
-
-    public function updateTicketStatus(ServiceTicket $ticket, string $status): ServiceTicket
-    {
-        $validTransitions = [
-            'open' => ['in_progress'],
-            'in_progress' => ['resolved', 'open'],
-            'resolved' => ['closed', 'in_progress'],
-            'closed' => ['open'],
-        ];
-
-        $allowed = $validTransitions[$ticket->status] ?? [];
-
-        if (!in_array($status, $allowed)) {
-            throw new \InvalidArgumentException(
-                "Cannot transition from '{$ticket->status}' to '{$status}'."
-            );
-        }
-
-        $ticket->update(['status' => $status]);
-        return $ticket->fresh();
-    }
-
-    public function getTicketDetail(int $id): ServiceTicket
-    {
-        return ServiceTicket::with([
-            'customer',
-            'assignedUser',
             'activities' => fn($q) => $q->with('user')->latest(),
         ])->findOrFail($id);
     }
 
     // ─── Follow-ups ───────────────────────────────────
-
+    // metode ini digunakan untuk customer service untuk mengetahui jadwal follow up nya di dashboard
+    // mengambil data follow up dari database berdasarkan tanggal follow up
     public function getFollowUps(array $filters = []): array
     {
         $baseQuery = Activity::with(['user', 'activitable'])
             ->whereNotNull('follow_up_date');
 
+        
+        // variabel $pending dan $overdue digunakan untuk sistem cs mengetahui siapa customer yg kelewatan jadwal follow up nya    
         $pending = (clone $baseQuery)
             ->where('follow_up_status', 'pending')
             ->when($filters['from'] ?? null, fn($q, $d) => $q->whereDate('follow_up_date', '>=', $d))
@@ -228,7 +163,6 @@ class CustomerService
     {
         $typeMap = [
             'customer' => Customer::class,
-            'ticket' => ServiceTicket::class,
         ];
 
         return Activity::create([

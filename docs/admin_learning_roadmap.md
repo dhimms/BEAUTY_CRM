@@ -78,7 +78,7 @@ Middleware   Follow-up   Logging    Team Perf.   Forecast   Analysis   Audit Log
 
 ### Konsep yang akan kamu pelajari:
 - Eloquent Aggregates (`count()`, `sum()`) dengan rentang tanggal khusus (`whereMonth`, `whereYear`).
-- Leaderboard logic: Bagaimana meranking Salesperson berdasarkan jumlah konversi/win rate.
+- Leaderboard logic: Bagaimana meranking Salesperson berdasarkan pencapaian target **Member Baru** (bukan lagi target nominal uang/revenue).
 
 ---
 
@@ -105,7 +105,7 @@ Middleware   Follow-up   Logging    Team Perf.   Forecast   Analysis   Audit Log
 ### Konsep yang akan kamu pelajari:
 - **Service Class Pattern**: Jangan membebani Controller! Pindahkan kalkulasi berat ke service.
 - *Dependency Injection* di Controller.
-- Membuat Chart Data (Visualisasi tren data selama berbulan-bulan).
+- Membuat Chart Data (Visualisasi tren *Member Acquisition* selama berbulan-bulan, menggantikan laporan *Revenue* lama).
 
 ---
 
@@ -113,7 +113,7 @@ Middleware   Follow-up   Logging    Team Perf.   Forecast   Analysis   Audit Log
 > 🎯 Tujuan: Belajar membuat fitur unduh laporan (`.xlsx`) & melacak jejak perubahan (Audit)
 
 ### File yang dibedah:
-- `app/Exports/SalesPerformanceExport.php` (Penggunaan library `Maatwebsite\Excel`)
+- `app/Exports/SalesPerformanceExport.php` & `RevenueExport.php` (Kini diekspor sebagai Laporan Member)
 - `app/Http/Controllers/Manager/AuditLogController.php`
 
 ### Konsep yang akan kamu pelajari:
@@ -126,8 +126,8 @@ Middleware   Follow-up   Logging    Team Perf.   Forecast   Analysis   Audit Log
 
 | Tahap | Topik | Status |
 |---|---|---| 
-| Tahap 1 | Route & Middleware CS & Manager | ⏳ Sedang Proses |
-| Tahap 2 | Customer & Follow-up (CS) | ⬜ Belum |
+| Tahap 1 | Route & Middleware CS & Manager | ✅ Selesai |
+| Tahap 2 | Customer & Follow-up (CS) | ✅ Selesai |
 | Tahap 3 | Activity Logging Polymorphic (CS) | ⬜ Belum |
 | Tahap 4 | Dashboard & Team Perf (Manager) | ⬜ Belum |
 | Tahap 5 | Pipeline Kanban & Forecast (Manager) | ⬜ Belum | 

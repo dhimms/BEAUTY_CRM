@@ -26,7 +26,7 @@ class CustomerController extends Controller
 
     public function show(Customer $customer)
     {
-        $customer->load(['lead', 'csUser', 'serviceTickets', 'activities.user']);
+        $customer->load(['lead', 'csUser', 'activities.user']);
         return view('admin.customers.show', compact('customer'));
     }
 

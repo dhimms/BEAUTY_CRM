@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 
 class CustomerController extends Controller
 {
+    // digunakan  untuk melihat biodata customer
     public function __construct(
         private CustomerService $customerService
     ) {}
@@ -42,6 +43,7 @@ class CustomerController extends Controller
             ->with('success', 'Customer berhasil ditambahkan.');
     }
 
+    // controller mengarahkan customerservice untuk menampilkan data customer sesuai ID nya
     public function show(Customer $customer)
     {
         $customer = $this->customerService->getCustomerDetail($customer->id);
