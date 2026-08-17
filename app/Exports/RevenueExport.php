@@ -9,6 +9,9 @@ use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
+// Tahap 7: Export Laporan Excel
+// Class ini menandatangani "Kontrak Kerja" (Interfaces) dari library Maatwebsite\Excel
+// Kontrak ini mewajibkan class memiliki fungsi-fungsi khusus: array(), headings(), styles(), title()
 class RevenueExport implements FromArray, WithHeadings, WithStyles, WithTitle
 {
     protected $data;
@@ -18,6 +21,8 @@ class RevenueExport implements FromArray, WithHeadings, WithStyles, WithTitle
         $this->data = $reportService->getMemberAcquisitionReport(12);
     }
 
+    // 1. KONTRAK ISI DATA (FromArray)
+    // Fungsi ini wajib mengembalikan susunan data per baris di Excel
     public function array(): array
     {
         return array_map(function ($month) {
@@ -28,6 +33,8 @@ class RevenueExport implements FromArray, WithHeadings, WithStyles, WithTitle
         }, $this->data['monthly']);
     }
 
+    // 2. KONTRAK JUDUL KOLOM / HEADER (WithHeadings)
+    // Baris pertama di Excel (A1, B1) akan diisi oleh tulisan ini
     public function headings(): array
     {
         return [
@@ -36,6 +43,8 @@ class RevenueExport implements FromArray, WithHeadings, WithStyles, WithTitle
         ];
     }
 
+    // 3. KONTRAK MENGHIAS EXCEL (WithStyles)
+    // Digunakan untuk menebalkan (Bold) baris ke-1 (Header)
     public function styles(Worksheet $sheet): array
     {
         return [

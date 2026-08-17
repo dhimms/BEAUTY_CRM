@@ -11,6 +11,9 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ReportController extends Controller
 {
+    // Ini disebut Dependency Injection. 
+    // Kita menyuntikkan Service (Koki) ke dalam Controller (Resepsionis).
+    // Tujuannya agar Controller tidak memuat perhitungan matematika/database yang berat.
     public function __construct(
         private ReportService $reportService
     ) {}
@@ -28,6 +31,8 @@ class ReportController extends Controller
 
     public function revenue()
     {
+        // Meskipun nama fungsinya "revenue", kita sudah mengubah targetnya menjadi Member Baru.
+        // Di sini Controller cukup melempar tugas ke Service untuk menghitung tren selama 12 bulan terakhir.
         $revenueData = $this->reportService->getMemberAcquisitionReport(12);
         return view('manager.reports.revenue', compact('revenueData'));
     }
@@ -58,18 +63,20 @@ class ReportController extends Controller
         return view('manager.reports.team-activity', compact('activities'));
     }
 
+    // Tahap 7: Fitur Export Laporan Excel
     public function export(ExportReportRequest $request)
     {
         $format = $request->input('format', 'xlsx');
         $type = $request->input('report_type');
 
+        // Fitur match (seperti switch-case modern) untuk menentukan laporan apa yang di-download
         return match ($type) {
             'sales-performance' => Excel::download(
                 new SalesPerformanceExport($this->reportService),
                 "sales-performance.{$format}"
             ),
             'revenue' => Excel::download(
-                new RevenueExport($this->reportService),
+                new RevenueExport($this->reportService), // Memanggil class Export yang bertugas merakit Excel
                 "revenue-report.{$format}"
             ),
             default => redirect()->back()->with('error', 'Tipe report tidak valid.'),

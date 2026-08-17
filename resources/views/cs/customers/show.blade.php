@@ -198,7 +198,7 @@
             <div class="p-6 border-b border-charcoal-100">
                 <h3 class="font-serif text-xl font-semibold text-charcoal-900">Edit Customer</h3>
             </div>
-            <form method="POST" action="{{ route('cs.customers.update', $customer) }}" class="p-6 space-y-4">
+            <form method="POST" action="{{ route('cs.customers.update', $customer) }}" class="p-6 space-y-4" x-data="{ isSubmitting: false }" @submit="if(isSubmitting) { $event.preventDefault(); return false; } isSubmitting = true;">
                 @csrf
                 @method('PUT')
                 <div class="grid grid-cols-2 gap-4">
@@ -245,7 +245,10 @@
                     <textarea name="notes" rows="2" class="w-full px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">{{ $customer->notes }}</textarea>
                 </div>
                 <div class="flex items-center gap-3 pt-3 border-t border-charcoal-100">
-                    <button type="submit" class="px-5 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700">Simpan</button>
+                    <button type="submit" :disabled="isSubmitting" :class="{ 'opacity-50 cursor-not-allowed': isSubmitting }" class="px-5 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700">
+                        <span x-show="!isSubmitting">Simpan</span>
+                        <span x-show="isSubmitting">Menyimpan...</span>
+                    </button>
                     <button type="button" @click="showEditModal = false" class="px-5 py-2 text-charcoal-500 text-sm">Batal</button>
                 </div>
             </form>
@@ -262,7 +265,7 @@
             <div class="p-6 border-b border-charcoal-100">
                 <h3 class="font-serif text-xl font-semibold text-charcoal-900">Log Aktivitas</h3>
             </div>
-            <form method="POST" action="{{ route('cs.activities.store') }}" class="p-6 space-y-4">
+            <form method="POST" action="{{ route('cs.activities.store') }}" class="p-6 space-y-4" x-data="{ isSubmitting: false }" @submit="if(isSubmitting) { $event.preventDefault(); return false; } isSubmitting = true;">
                 @csrf
                 <input type="hidden" name="activitable_type" value="customer">
                 <input type="hidden" name="activitable_id" value="{{ $customer->id }}">
@@ -305,7 +308,10 @@
                     </select>
                 </div>
                 <div class="flex items-center gap-3 pt-3 border-t border-charcoal-100">
-                    <button type="submit" class="px-5 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700">Simpan</button>
+                    <button type="submit" :disabled="isSubmitting" :class="{ 'opacity-50 cursor-not-allowed': isSubmitting }" class="px-5 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700">
+                        <span x-show="!isSubmitting">Simpan</span>
+                        <span x-show="isSubmitting">Menyimpan...</span>
+                    </button>
                     <button type="button" @click="showActivityModal = false" class="px-5 py-2 text-charcoal-500 text-sm">Batal</button>
                 </div>
             </form>

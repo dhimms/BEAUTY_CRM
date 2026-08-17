@@ -88,6 +88,22 @@
                     </a>
                 @endif
 
+                {{-- Forecast (Manager Only) --}}
+                @if(auth()->user()->isManager())
+                    <a href="{{ route('manager.forecast.index') }}"
+                        class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+                              {{ request()->routeIs('*forecast*') ? 'bg-rose-500/10 text-rose-400 border-l-3 border-rose-500' : 'text-charcoal-300 hover:text-white hover:bg-charcoal-800' }}">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                        <span class="whitespace-nowrap transition-opacity duration-200"
+                            :class="sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'">
+                            Forecast
+                        </span>
+                    </a>
+                @endif
+
                 {{-- Customers --}}
                 @if(auth()->user()->isAdmin() || auth()->user()->isCS())
                     <a href="{{ auth()->user()->isAdmin() ? route('admin.customers.index') : route('cs.customers.index') }}"

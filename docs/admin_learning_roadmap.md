@@ -90,8 +90,8 @@ Middleware   Follow-up   Logging    Team Perf.   Forecast   Analysis   Audit Log
 - `app/Http/Controllers/Manager/ForecastController.php`
 
 ### Konsep yang akan kamu pelajari:
-- **Kanban Board Logic**: Memecah data `Deals` berdasarkan `PipelineStage` secara dinamis.
-- **Forecasting**: Menghitung probabilitas penambahan member di masa depan berdasarkan tahapan pipeline saat ini.
+- **Kanban Board Logic**: Memecah data `Deals` berdasarkan `PipelineStage` secara dinamis dan mengubahnya menjadi format JSON.
+- **Forecasting & Weighted Value**: Menghitung probabilitas penambahan **Member Baru** di masa depan menggunakan rumus probabilitas (Bobot Nilai/Weighted Value). Menggantikan sistem lama yang memprediksi nominal uang/revenue.
 
 ---
 
@@ -128,10 +128,10 @@ Middleware   Follow-up   Logging    Team Perf.   Forecast   Analysis   Audit Log
 |---|---|---| 
 | Tahap 1 | Route & Middleware CS & Manager | ✅ Selesai |
 | Tahap 2 | Customer & Follow-up (CS) | ✅ Selesai |
-| Tahap 3 | Activity Logging Polymorphic (CS) | ⬜ Belum |
-| Tahap 4 | Dashboard & Team Perf (Manager) | ⬜ Belum |
-| Tahap 5 | Pipeline Kanban & Forecast (Manager) | ⬜ Belum | 
-| Tahap 6 | Report & Pipeline Analysis (Manager) | ⬜ Belum | 
+| Tahap 3 | Activity Logging Polymorphic (CS) | ✅ Selesai |
+| Tahap 4 | Dashboard & Team Perf (Manager) | ✅ Selesai |
+| Tahap 5 | Pipeline Kanban & Forecast (Manager) | ✅ Selesai | 
+| Tahap 6 | Report & Pipeline Analysis (Manager) | ✅ Selesai | 
 | Tahap 7 | Export Laporan Excel & Audit Log (Manager) | ⬜ Belum |   
 
 ---

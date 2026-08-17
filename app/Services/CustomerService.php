@@ -98,7 +98,7 @@ class CustomerService
     }
 
     // ─── Follow-ups ───────────────────────────────────
-    // metode ini digunakan untuk customer service untuk mengetahui jadwal follow up nya di dashboard
+    // metode ini digunakan untuk customer service untuk mengetahui jadwal follow up
     // mengambil data follow up dari database berdasarkan tanggal follow up
     public function getFollowUps(array $filters = []): array
     {
@@ -158,7 +158,8 @@ class CustomerService
     }
 
     // ─── Activities ───────────────────────────────────
-
+    // logactivity digunakan untuk mencatat aktivitas yang dilakukan oleh customer service
+    // untuk mengetahui aktivitas apa saja yang dilakukan oleh customer service 
     public function logActivity(array $data): Activity
     {
         $typeMap = [

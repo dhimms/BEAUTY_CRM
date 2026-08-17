@@ -39,7 +39,6 @@
                     <span class="text-xs font-mono bg-white px-2 py-1 rounded-full text-charcoal-500 border" x-text="stage.count + ' deals'"></span>
                 </div>
                 <p class="text-xs text-charcoal-400 mb-3">
-                    Total: <span class="font-semibold text-charcoal-700" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(stage.total_value)"></span>
                     <span class="ml-1">(prob: <span x-text="stage.probability"></span>%)</span>
                 </p>
                 <div class="space-y-3">
@@ -47,8 +46,7 @@
                         <div class="bg-white rounded-xl p-4 border border-charcoal-200 shadow-sm hover:shadow-md transition-shadow">
                             <p class="text-sm font-semibold text-charcoal-900 mb-1" x-text="deal.name"></p>
                             <p class="text-xs text-charcoal-500 mb-2" x-text="deal.lead_name"></p>
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm font-mono font-semibold text-amber-700" x-text="deal.formatted_value"></span>
+                            <div class="flex items-center justify-end">
                                 <span class="text-[10px] text-charcoal-400" x-text="deal.expected_close ?? '-'"></span>
                             </div>
                             <p class="text-[10px] text-charcoal-400 mt-1" x-text="'→ ' + deal.assigned_to"></p>
@@ -72,8 +70,6 @@
                             <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Deal</th>
                             <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Lead</th>
                             <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Stage</th>
-                            <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Value</th>
-                            <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Weighted</th>
                             <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Sales</th>
                             <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Close Date</th>
                         </tr>
@@ -90,8 +86,6 @@
                                             <span x-text="stage.name"></span>
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 text-right font-mono text-charcoal-900" x-text="deal.formatted_value"></td>
-                                    <td class="px-6 py-4 text-right font-mono text-amber-700" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(deal.weighted_value)"></td>
                                     <td class="px-6 py-4 text-charcoal-600 text-xs" x-text="deal.assigned_to"></td>
                                     <td class="px-6 py-4 text-charcoal-500 text-xs" x-text="deal.expected_close ?? '-'"></td>
                                 </tr>

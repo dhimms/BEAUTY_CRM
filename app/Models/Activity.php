@@ -41,6 +41,10 @@ class Activity extends Model
         return $this->belongsTo(User::class);
     }
 
+    // activitable digunakan untuk polymophic relationship
+    // digunakan untuk polymophic relationship karena dapat berhubungan dengan model lain
+    // seperti customer, lead, dan lain lain
+    // jadi dalam tabel activity data nya tidak hanya berhubungan dengan customer saja tetapi juga bisa berhubungan dengan lead dan lain lain  
     public function activitable()
     {
         return $this->morphTo();

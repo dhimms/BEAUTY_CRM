@@ -97,7 +97,8 @@ class Deal extends Model
     public function getWeightedValueAttribute(): float
     {
         $probability = $this->pipelineStage?->probability ?? 0;
-        return $this->value * ($probability / 100);
+        // Bobot untuk 1 calon member (1 Deal = 1 Orang)
+        return $probability / 100;
     }
 
     public function getFormattedValueAttribute(): string
