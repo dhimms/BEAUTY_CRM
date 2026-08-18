@@ -9,6 +9,10 @@ use App\Models\Activity;
 
 class ActivityController extends Controller
 {
+    /**
+     * Muncul di: Halaman Detail Lead (`leads/show.blade.php`) & Detail Deal (`deals/show.blade.php`) -> Form/Tab "Tambah Aktivitas"
+     * Penjelasan: Mencatat log aktivitas (Panggilan, Meeting, Catatan, Email) dan jadwal follow-up. Otomatis mengubah status lead 'new' menjadi 'contacted'.
+     */
     public function store(StoreActivityRequest $request)
     {
         Activity::create([
@@ -27,7 +31,7 @@ class ActivityController extends Controller
             'follow_up_status' => $request->follow_up_date ? 'pending' : 'done',
         ]);
 
-        // If it's a Lead and status is 'new', change to 'contacted'
+        // jika lead statusnya new, ubah ke contacted
         if ($request->activitable_type === 'lead') {
             $lead = \App\Models\Lead::find($request->activitable_id);
             if ($lead && $lead->status === 'new') {
@@ -38,6 +42,10 @@ class ActivityController extends Controller
         return back()->with('success', 'Aktivitas berhasil dicatat.');
     }
 
+    /**
+     * Muncul di: Timeline Aktivitas (Detail Lead/Deal) -> Tombol "Edit Aktivitas"
+     * Penjelasan: Memperbarui isi catatan, tipe, atau jadwal follow-up pada aktivitas yang dibuat oleh sales.
+     */
     public function update(UpdateActivityRequest $request, Activity $activity)
     {
         if ($activity->user_id !== auth()->id()) {
@@ -49,6 +57,10 @@ class ActivityController extends Controller
         return back()->with('success', 'Aktivitas berhasil diperbarui.');
     }
 
+    /**
+     * Muncul di: Timeline Aktivitas (Detail Lead/Deal) -> Tombol Hapus (Icon Sampah)
+     * Penjelasan: Menghapus data log aktivitas yang pernah dicatat oleh sales.
+     */
     public function destroy(Activity $activity)
     {
         if ($activity->user_id !== auth()->id()) {
@@ -60,6 +72,10 @@ class ActivityController extends Controller
         return back()->with('success', 'Aktivitas berhasil dihapus.');
     }
 
+    /**
+     * Muncul di: Dashboard Sales (Widget "Today's Follow-ups") & Detail Lead/Deal -> Checkbox/Tombol "Tandai Selesai"
+     * Penjelasan: Mengubah status follow-up aktivitas dari 'pending' menjadi 'done'.
+     */
     public function completeFollowUp(Activity $activity)
     {
         if ($activity->user_id !== auth()->id()) {

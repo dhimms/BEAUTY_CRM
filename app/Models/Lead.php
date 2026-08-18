@@ -6,6 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * Model Lead (Calon Pelanggan)
+ * Digunakan di: LeadController, DashboardController, DealService, dan Tampilan Views Leads.
+ * Fungsi: Mengelola data calon pelanggan yang didapatkan Sales (sumber, status, kualifikasi).
+ */
 class Lead extends Model
 {
     use HasFactory, SoftDeletes;
@@ -31,40 +36,47 @@ class Lead extends Model
         ];
     }
 
-    // ─── Relationships ───────────────────────────────
+    // ─── Relationships (Relasi Antar Tabel) ─────────
 
+    // Relasi ke tabel LeadSource (sumber lead: Instagram, WA, dll)
     public function source()
     {
         return $this->belongsTo(LeadSource::class, 'lead_source_id');
     }
 
+    // Relasi ke tabel User (sales yang bertanggung jawab)
     public function assignedUser()
     {
         return $this->belongsTo(User::class, 'assigned_to');
     }
 
+    // Relasi ke tabel User (pembuat data lead)
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    // Relasi ke tabel Deals (transaksi deal yang dibuat dari lead ini)
     public function deals()
     {
         return $this->hasMany(Deal::class);
     }
 
+    // Relasi ke tabel Activities (log aktivitas follow-up lead)
     public function activities()
     {
         return $this->morphMany(Activity::class, 'activitable');
     }
 
+    // Relasi ke tabel Customer (jika deal won, lead jadi customer)
     public function customer()
     {
         return $this->hasOne(Customer::class);
     }
 
-    // ─── Scopes ──────────────────────────────────────
+    // ─── Scopes (Filter Query Data) ──────────────────
 
+    // Filter daftar lead berdasarkan status (default: tidak menampilkan yang sudah converted)
     public function scopeFilterStatus($query, ?string $status)
     {
         if ($status === 'all') {
@@ -75,15 +87,16 @@ class Lead extends Model
             return $query->where('status', $status);
         }
         
-        // By default, exclude leads that have been converted to Deals/Customers
         return $query->where('status', '!=', 'converted');
     }
 
+    // Filter lead berdasarkan sumber asal lead (Instagram, WA, Website, dll)
     public function scopeFilterSource($query, ?int $sourceId)
     {
         return $sourceId ? $query->where('lead_source_id', $sourceId) : $query;
     }
 
+    // Filter lead berdasarkan kualifikasi (qualified, unqualified, win, lost)
     public function scopeFilterQualification($query, ?string $qualification)
     {
         if (!$qualification) {
@@ -99,11 +112,13 @@ class Lead extends Model
         return $query->where('qualification', $qualification);
     }
 
+    // Filter lead berdasarkan sales yang memegang (assigned_to)
     public function scopeFilterAssigned($query, ?int $userId)
     {
         return $userId ? $query->where('assigned_to', $userId) : $query;
     }
 
+    // Filter pencarian lead berdasarkan nama, email, atau nomor HP
     public function scopeSearch($query, ?string $search)
     {
         if (!$search)
@@ -115,8 +130,9 @@ class Lead extends Model
         });
     }
 
-    // ─── Accessors ───────────────────────────────────
+    // ─── Accessors (Format Tampilan Warna Badge UI) ─
 
+    // Menentukan warna badge untuk status lead di Blade view
     public function getStatusColorAttribute(): string
     {
         return match ($this->status) {
@@ -131,6 +147,7 @@ class Lead extends Model
         };
     }
 
+    // Menentukan warna badge untuk kualifikasi lead di Blade view
     public function getQualificationColorAttribute(): string
     {
         return match ($this->qualification) {
