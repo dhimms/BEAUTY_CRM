@@ -47,13 +47,19 @@ class LeadSourceController extends Controller
         return redirect()->route('admin.lead-sources.index')
             ->with('success', 'Lead source berhasil dihapus.');
     }
-
+    // toggle adalah fitur yang digunakan untuk mengaktifkan atau menonaktifkan suatu data
+    // ini adalah method yang digunakan untuk mengaktifkan atau menonaktifkan suatu data (pada menu toggle lead source)
+    // pertama tangkap variabel di dalam LeadSource $leadSource
+    // kedua melakukan update pada variabel is_active
+    // ketiga mengembalikan nilai is_active
+    // keempat mengubah format data menjadi json    
     public function toggle(LeadSource $leadSource)
-    {
+    {   // 'is_active' ini adalah untuk nama kolom di databased 
+        // is_active ini adalah variabel yang akan di update
         $leadSource->update(['is_active' => !$leadSource->is_active]);
-        return response()->json([
-            'success'   => true,
+        return response()->json([  
+            'success'   => true, 
             'is_active' => $leadSource->is_active,
         ]);
-    }
+    } 
 }

@@ -23,7 +23,7 @@ class ImportExportService
             'failures' => $failures,
             'failure_count' => count($failures),
         ];
-    }
+    } 
 
     /**
      * Export leads with optional filters.

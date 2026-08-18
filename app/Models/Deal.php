@@ -66,7 +66,9 @@ class Deal extends Model
     }
 
     // ─── Scopes ──────────────────────────────────────
-
+    // scopes adalah method yang digunakan untuk mengembalikan query berdasarkan kondisi tertentu
+    // jadi scope ini mempermudah saat mengambil data berdasarkan kondisi tertentu
+    
     public function scopeOpen($query)
     {
         return $query->where('status', 'open');

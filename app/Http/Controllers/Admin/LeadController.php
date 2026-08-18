@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\LeadRequest;
 use App\Models\Lead;
 use App\Models\LeadSource;
-use App\Models\User;
+use App\Models\User;  
 use App\Notifications\LeadAssignedNotification;
 use Illuminate\Http\Request;
 

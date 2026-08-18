@@ -8,17 +8,25 @@ use App\Models\LostReason;
 
 class LostReasonController extends Controller
 {
-    public function index()
+    // method index untuk menampilkan data lost reasons
+    // di sini saya menambahkan withCount('deals') untuk menghitung jumlah deal yang memiliki lost reason ini
+    // latest() untuk mengurutkan data berdasarkan created_at terbaru 
+    // paginate(20) untuk membatasi jumlah data yang ditampilkan per halaman  
+    public function index()                     
     {
         $reasons = LostReason::withCount('deals')->latest()->paginate(20);
         return view('admin.lost-reasons.index', compact('reasons'));
     }
-
+ 
     public function create()
     {
         return view('admin.lost-reasons.create');
     }
 
+    // Method store untuk menyimpan data Lost Reason baru ke database.
+    // Kita menggunakan FormRequest (LostReasonRequest) sebagai "Satpam" di pintu masuk.
+    // Jika lolos validasi, method $request->validated() akan mengambil data yang sudah bersih,
+    // lalu diserahkan ke Model untuk disimpan ke database.
     public function store(LostReasonRequest $request)
     {
         LostReason::create($request->validated());
@@ -38,6 +46,11 @@ class LostReasonController extends Controller
             ->with('success', 'Lost reason berhasil diperbarui.');
     }
 
+    // Method destroy digunakan untuk menghapus data Lost Reason.
+    // Namun, sebelum menghapus, kita melakukan pengecekan dulu:
+    // $lostReason->deals()->exists() -> Apakah ada data Deal yang masih "numpang" di Lost Reason ini?
+    // Jika ada (returns true), maka akan muncul pesan error dan proses hapus dibatalkan (back()).
+    // Jika tidak ada (aman untuk dihapus), maka data akan dihapus (delete()).
     public function destroy(LostReason $lostReason)
     {
         if ($lostReason->deals()->exists()) {

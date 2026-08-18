@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+// Spatie adalah  package yang digunakan untuk membedakan role user 
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
-{
+{  // use untuk memanggil package yang digunakan
     use HasFactory, Notifiable, HasRoles, SoftDeletes;
 
     protected $fillable = [
@@ -66,7 +67,8 @@ class User extends Authenticatable
     }
 
     // ─── Helpers ─────────────────────────────────────
-
+     
+    // method untuk mengecek apakah user ini rolenya apa
     public function isAdmin(): bool
     {
         return $this->hasRole('Admin');

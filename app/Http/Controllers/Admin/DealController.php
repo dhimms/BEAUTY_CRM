@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 class DealController extends Controller
 {
     public function index(Request $request)
-    {
+    { 
         $deals = Deal::query()
             ->with(['lead', 'pipelineStage', 'assignedUser'])
             ->when($request->search, fn($q, $v) => $q->where(function ($q) use ($v) {
