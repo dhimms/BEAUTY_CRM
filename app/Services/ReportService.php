@@ -367,8 +367,41 @@ class ReportService
         ];
     }
 
+    // ─── Audit Logs ───────────────────────────────────
+
+    public function getAuditLogs(array $filters = []): \Illuminate\Pagination\LengthAwarePaginator
+    {
+        return AuditLog::with('user')
+            ->filterAction($filters['action'] ?? null)
+            ->filterUser($filters['user_id'] ?? null)
+            ->filterModule($filters['module'] ?? null)
+            ->latest()
+            ->paginate(20)
+            ->withQueryString();
+    }
+
     // ─── Private Helpers ──────────────────────────────
 
+    private function getMemberTrend(int $months): array
+    {
+        $data = [];
+        $now = Carbon::now();
+
+        for ($i = $months - 1; $i >= 0; $i--) {
+            $date = $now->copy()->subMonths($i);
+            $members = Deal::won()
+                ->whereYear('closed_at', $date->year)
+                ->whereMonth('closed_at', $date->month)
+                ->count();
+
+            $data[] = [
+                'month' => $date->format('M'),
+                'count' => $members,
+            ];
+        }
+
+        return $data;
+    }
     private function getFunnelData(string $period = 'all', ?string $startDate = null, ?string $endDate = null): array
     {
         // Membuat data alur Sales dari Lead sampai menjadi Deal WON.
