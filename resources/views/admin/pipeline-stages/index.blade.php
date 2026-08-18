@@ -63,7 +63,7 @@
                     });
                     
                     fetch('{{ route("admin.pipeline-stages.reorder") }}', {
-                        method: 'POST',
+                        method: 'PATCH',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
