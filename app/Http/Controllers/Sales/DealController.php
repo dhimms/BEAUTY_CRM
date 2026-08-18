@@ -22,6 +22,11 @@ class DealController extends Controller
         protected DealService $dealService
     ) {}
 
+    /**
+     * Muncul di: Menu Sidebar -> "Pipeline" (/sales/pipeline)
+     * Tampilan: resources/views/sales/deals/pipeline.blade.php
+     * Penjelasan: Menampilkan board kanban deal berdasarkan tahapan (stage) pipeline sales.
+     */
     public function pipeline(Request $request)
     {
         $stages = PipelineStage::ordered()
@@ -36,6 +41,11 @@ class DealController extends Controller
         return view('sales.deals.pipeline', compact('stages'));
     }
 
+    /**
+     * Muncul di: Menu Sidebar -> "Deals" / Tombol "List View" di Halaman Pipeline (/sales/deals)
+     * Tampilan: resources/views/sales/deals/index.blade.php
+     * Penjelasan: Menampilkan daftar deal dalam bentuk tabel dengan filter stage, status, dan pencarian.
+     */
     public function index(Request $request)
     {
         $deals = Deal::where('assigned_to', auth()->id())
@@ -57,6 +67,11 @@ class DealController extends Controller
         return view('sales.deals.index', compact('deals', 'stages'));
     }
 
+    /**
+     * Muncul di: Halaman Detail Lead -> Tombol "Convert to Deal" (/sales/deals/create/{lead})
+     * Tampilan: resources/views/sales/deals/create.blade.php
+     * Penjelasan: Menampilkan form pembuatan deal baru khusus untuk lead yang sudah berstatus Qualified.
+     */
     public function create(Lead $lead)
     {
         if ($lead->assigned_to !== auth()->id()) {
@@ -73,6 +88,10 @@ class DealController extends Controller
         return view('sales.deals.create', compact('lead', 'stages'));
     }
 
+    /**
+     * Muncul di: Form Buat Deal -> Tombol "Simpan / Create Deal"
+     * Penjelasan: Menyimpan deal baru dan mengubah status lead terkait menjadi 'converted'.
+     */
     public function store(StoreDealRequest $request)
     {
         $lead = Lead::findOrFail($request->lead_id);
@@ -87,6 +106,11 @@ class DealController extends Controller
             ->with('success', 'Deal berhasil dibuat!');
     }
 
+    /**
+     * Muncul di: Klik Card Deal pada Kanban / Nama Deal pada Tabel List View (/sales/deals/{id})
+     * Tampilan: resources/views/sales/deals/show.blade.php
+     * Penjelasan: Menampilkan detail deal, estimasi nilai, tahapan stage saat ini, dan log aktivitas terkait.
+     */
     public function show(Deal $deal)
     {
         if ($deal->assigned_to !== auth()->id()) {
@@ -108,6 +132,10 @@ class DealController extends Controller
         return view('sales.deals.show', compact('deal', 'stages', 'lostReasons'));
     }
 
+    /**
+     * Muncul di: Halaman Detail Deal -> Modal / Form "Edit Deal"
+     * Penjelasan: Memperbarui informasi deal (nama deal, estimasi nilai deal, tanggal penutupan).
+     */
     public function update(UpdateDealRequest $request, Deal $deal)
     {
         if ($deal->assigned_to !== auth()->id()) {
@@ -119,6 +147,10 @@ class DealController extends Controller
         return back()->with('success', 'Deal berhasil diperbarui.');
     }
 
+    /**
+     * Muncul di: Kanban Board (Drag & Drop Card Deal ke Kolom Lain) atau Detail Deal (Tombol "Pindah Stage")
+     * Penjelasan: Mengubah tahapan stage pada deal (via AJAX saat drag & drop di kanban board).
+     */
     public function moveStage(Request $request, Deal $deal)
     {
         if ($deal->assigned_to !== auth()->id()) {
@@ -146,6 +178,10 @@ class DealController extends Controller
         }
     }
 
+    /**
+     * Muncul di: Halaman Detail Deal -> Tombol "Mark as Won" atau "Mark as Lost"
+     * Penjelasan: Menutup deal. Jika WON: otomatis buat Customer baru dan kirim notifikasi ke Admin & Manager. Jika LOST: simpan alasan kekalahan.
+     */
     public function close(CloseDealRequest $request, Deal $deal)
     {
         if ($deal->assigned_to !== auth()->id()) {

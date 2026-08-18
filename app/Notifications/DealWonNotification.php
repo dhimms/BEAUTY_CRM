@@ -14,6 +14,7 @@ class DealWonNotification extends Notification
     /**
      * Create a new notification instance.
      */
+    //membuat instance baru untuk notification
     public $deal;
 
     public function __construct($deal)
@@ -26,11 +27,13 @@ class DealWonNotification extends Notification
      *
      * @return array<int, string>
      */
+    //menentukan channel mana yang akan digunakan untuk mengirim notifikasi
     public function via(object $notifiable): array
     {
         return ['database'];
     }
 
+    //mengirim data notifikasi ke database
     public function toDatabase(object $notifiable): array
     {
         return [

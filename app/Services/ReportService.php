@@ -18,7 +18,11 @@ use Illuminate\Support\Facades\DB;
 class ReportService
 {
     // ─── Manager Dashboard ────────────────────────────
-    //  Menghitung Metrik Agregat
+    /**
+     * Dipanggil oleh: Manager\DashboardController@index (Dashboard Manager)
+     * Penjelasan: Mengumpulkan statistik utama (total lead, deal, won, lost, win rate, funnel, perbandingan performa sales, & leaderboard).
+     * Fokus: Menghitung Metrik Agregat
+     */
     public function getManagerDashboard(string $period = 'all', ?string $startDate = null, ?string $endDate = null): array
     {
         // 1. menghitung jumlah total leads, deals, won, lost
@@ -26,22 +30,15 @@ class ReportService
         $totalDeals = $this->applyPeriodFilter(Deal::query(), 'created_at', $period, $startDate, $endDate)->count();
         $wonDeals = $this->applyPeriodFilter(Deal::won(), 'closed_at', $period, $startDate, $endDate)->count();
         $lostDeals = $this->applyPeriodFilter(Deal::lost(), 'closed_at', $period, $startDate, $endDate)->count();
+
         $winRate = ($wonDeals + $lostDeals) > 0
             ? round(($wonDeals / ($wonDeals + $lostDeals)) * 100, 1)
             : 0;
-        // Member trend 12 months
+
         $memberTrend = $this->getMemberTrend(12);
-
-        // Funnel data
         $funnel = $this->getFunnelData($period, $startDate, $endDate);
-
-        // Sales performance comparison
         $salesComparison = $this->getSalesComparison($period, $startDate, $endDate);
-
-        // Lead sources breakdown by month
         $leadSourcesMonthly = $this->getLeadSourcesMonthly(6);
-
-        // Leaderboard
         $leaderboard = $this->getTeamLeaderboard($period, $startDate, $endDate);
 
         return compact(
@@ -58,7 +55,11 @@ class ReportService
     }
 
     // ─── Pipeline ─────────────────────────────────────
-    // fitur kanban board
+    /**
+     * Dipanggil oleh: Manager\ReportController@pipeline (Laporan Pipeline Manager)
+     * Penjelasan: Mengambil seluruh data deal open yang dikelompokkan berdasarkan stage pipeline.
+     * Fitur: Kanban board
+     */
     public function getPipelineData(): array
     {
         // 1. Mengambil semua "Kolom Status" (PipelineStage
@@ -99,11 +100,16 @@ class ReportService
 
     // ─── Sales Performance Report ─────────────────────
 
+    /**
+     * Dipanggil oleh: Manager\ReportController@salesPerformance (Laporan Performa Sales)
+     * Penjelasan: Menghitung metrik performa masing-masing user Sales (leads, deals, won, lost, win rate %, rata-rata hari closing, & jumlah aktivitas).
+     */
     public function getSalesPerformance(): Collection
     {
         $salesUsers = User::role('Sales')->where('is_active', true)->get();
 
         return $salesUsers->map(function ($user) {
+
             $leads = Lead::where('assigned_to', $user->id);
             $totalLeads = $leads->count();
             $qualifiedLeads = (clone $leads)->where('qualification', 'qualified')->count();
@@ -112,7 +118,9 @@ class ReportService
             $totalDeals = $deals->count();
             $wonDeals = (clone $deals)->won()->count();
             $lostDeals = (clone $deals)->lost()->count();
+
             $target = $user->monthly_target ?? 20;
+
             $winRate = ($wonDeals + $lostDeals) > 0
                 ? round(($wonDeals / ($wonDeals + $lostDeals)) * 100, 1)
                 : 0;
@@ -120,12 +128,15 @@ class ReportService
             $activities = Activity::where('user_id', $user->id)->count();
 
             $wonDealsList = (clone $deals)->won()->get();
+
             $totalDays = 0;
+
             foreach ($wonDealsList as $wd) {
                 if ($wd->closed_at) {
                     $totalDays += $wd->created_at->diffInDays($wd->closed_at);
                 }
             }
+
             $avgCloseTime = $wonDeals > 0 ? round($totalDays / $wonDeals, 1) : 0;
 
             return [
@@ -145,100 +156,50 @@ class ReportService
         })->sortByDesc('won')->values();
     }
 
-    // ─── Member Acquisition Report ───────────────────────────────
-
-    public function getMemberAcquisitionReport(int $months = 12): array
-    {
-        $data = [];
-        $now = Carbon::now();
-
-        for ($i = $months - 1; $i >= 0; $i--) {
-            $date = $now->copy()->subMonths($i);
-            $dealsCount = Deal::won()
-                ->whereYear('closed_at', $date->year)
-                ->whereMonth('closed_at', $date->month)
-                ->count();
-
-            $data[] = [
-                'month' => $date->format('M Y'),
-                'month_short' => $date->format('M'),
-                'deals_count' => $dealsCount,
-            ];
-        }
-
-        $totalMembers = array_sum(array_column($data, 'deals_count'));
-        $avgMonthly = $months > 0 ? $totalMembers / $months : 0;
-
-        return [
-            'monthly' => $data,
-            'total' => $totalMembers,
-            'average' => $avgMonthly,
-        ];
-    }
-
-    // ─── Lost Reasons Report ──────────────────────────
-
-    public function getLostReasons(): array
-    {
-        $totalLost = Deal::lost()->count();
-
-        $reasons = Deal::lost()
-            ->whereNotNull('lost_reason_id')
-            ->join('lost_reasons', 'deals.lost_reason_id', '=', 'lost_reasons.id')
-            ->selectRaw('lost_reasons.name, COUNT(*) as count')
-            ->groupBy('lost_reasons.name')
-            ->orderByDesc('count')
-            ->get()
-            ->map(fn($item) => [
-                'name' => $item->name,
-                'count' => $item->count,
-                'percentage' => $totalLost > 0 ? round(($item->count / $totalLost) * 100, 1) : 0,
-            ]);
-
-        $noReason = Deal::lost()->whereNull('lost_reason_id')->count();
-        if ($noReason > 0) {
-            $reasons->push([
-                'name' => 'Tidak Disebutkan',
-                'count' => $noReason,
-                'percentage' => $totalLost > 0 ? round(($noReason / $totalLost) * 100, 1) : 0,
-            ]);
-        }
-
-        return [
-            'reasons' => $reasons,
-            'total' => $totalLost,
-        ];
-    }
-
-    // ─── Lead Sources Report ──────────────────────────
-
-    public function getLeadSources(): Collection
-    {
-        return LeadSource::withCount('leads')
-            ->orderByDesc('leads_count')
-            ->get()
-            ->map(fn($source) => [
-                'name' => $source->name,
-                'count' => $source->leads_count,
-                'color' => $source->color ?? '#6B7280',
-            ]);
-    }
-
     // ─── Team Leaderboard ─────────────────────────────
 
+    /**
+     * Dipanggil oleh: Manager\ReportController@leaderboard (Leaderboard Tim Sales)
+     * Penjelasan: Mengurutkan peringkat tim sales berdasarkan total Deal WON pada periode yang dipilih.
+     */
     public function getTeamLeaderboard(string $period = 'all', ?string $startDate = null, ?string $endDate = null): Collection
     {
-        // 1. Ambil semua akun staf yang jabatannya Sales 
+        // 1. Ambil semua akun staf yang jabatannya Sales (aktif)
         $salesUsers = User::role('Sales')->where('is_active', true)->get();
         // 2. Lakukan perulangan (map) untuk setiap Sales
         return $salesUsers->map(function ($user) use ($period, $startDate, $endDate) {
-            // Hitung transaksi yang sukses dan gagal milik spesifik Sales ini ($user->id)
-            $wonDeals = $this->applyPeriodFilter(Deal::where('assigned_to', $user->id)->won(), 'closed_at', $period, $startDate, $endDate)->count();
-            $lostDeals = $this->applyPeriodFilter(Deal::where('assigned_to', $user->id)->lost(), 'closed_at', $period, $startDate, $endDate)->count();
+            // Menghitung jumlah Deal WON milik Sales berdasarkan periode yang dipilih.
+            $wonDeals = $this->applyPeriodFilter(
+                Deal::where('assigned_to', $user->id)->won(),
+                'closed_at',
+                $period,
+                $startDate,
+                $endDate
+            )->count();
+
+            // Menghitung jumlah Deal LOST milik Sales berdasarkan periode yang dipilih.
+            $lostDeals = $this->applyPeriodFilter(
+                Deal::where('assigned_to', $user->id)->lost(),
+                'closed_at',
+                $period,
+                $startDate,
+                $endDate
+            )->count();
+
+            // Mengambil target bulanan Sales. Kalau tidak ada, menggunakan target 20.
             $target = $user->monthly_target ?? 20;
-            $leads = $this->applyPeriodFilter(Lead::where('assigned_to', $user->id), 'created_at', $period, $startDate, $endDate)->count();
+
+            // Menghitung jumlah Lead yang dimiliki Sales berdasarkan periode.
+            $leads = $this->applyPeriodFilter(
+                Lead::where('assigned_to', $user->id),
+                'created_at',
+                $period,
+                $startDate,
+                $endDate
+            )->count();
+
             // 3. LOGIKA MATEMATIKA (Win Rate)
-            // Kemenangan dibagi Total Transaksi (Menang + Kalah)
+            // Menghitung persentase keberhasilan Sales berdasarkan Deal WON dan LOST.
             $winRate = ($wonDeals + $lostDeals) > 0
                 ? round(($wonDeals / ($wonDeals + $lostDeals)) * 100, 1)
                 : 0;
@@ -261,42 +222,68 @@ class ReportService
 
     public function getTeamMemberDetail(int $userId): array
     {
+        // Mengambil data Sales berdasarkan ID user yang dipilih.
         $user = User::findOrFail($userId);
 
+        // Mengambil semua Lead milik Sales tersebut.
         $leads = Lead::where('assigned_to', $userId);
+
+        // Menghitung jumlah seluruh Lead.
         $totalLeads = $leads->count();
+
+        // Menghitung jumlah Lead yang sudah qualified.
         $qualifiedLeads = (clone $leads)->where('qualification', 'qualified')->count();
+
+        // Menghitung jumlah Lead yang sudah dikonversi menjadi Deal.
         $convertedLeads = (clone $leads)->where('status', 'converted')->count();
 
+        // Mengambil semua Deal milik Sales tersebut.
         $deals = Deal::where('assigned_to', $userId);
+
+        // Menghitung jumlah seluruh Deal.
         $totalDeals = $deals->count();
+
+        // Menghitung jumlah Deal yang WON.
         $wonDeals = (clone $deals)->won()->count();
+
+        // Menghitung jumlah Deal yang LOST.
         $lostDeals = (clone $deals)->lost()->count();
+
+        // Menghitung jumlah Deal yang masih OPEN.
         $openDeals = (clone $deals)->open()->count();
+
+        // Mengambil target bulanan Sales.
         $target = $user->monthly_target ?? 20;
+
+        // Menghitung persentase keberhasilan Sales.
         $winRate = ($wonDeals + $lostDeals) > 0
             ? round(($wonDeals / ($wonDeals + $lostDeals)) * 100, 1)
             : 0;
 
+        // Menghitung jumlah aktivitas yang dilakukan Sales.
         $activities = Activity::where('user_id', $userId)->count();
 
-        // Monthly member trend for this user (6 months)
+        // Menyiapkan data jumlah Deal WON setiap bulan selama 6 bulan terakhir.
         $monthlyWonCount = [];
         $now = Carbon::now();
+
         for ($i = 5; $i >= 0; $i--) {
             $date = $now->copy()->subMonths($i);
+
+            // Menghitung jumlah Deal WON Sales pada bulan tersebut.
             $count = Deal::where('assigned_to', $userId)
                 ->won()
                 ->whereYear('closed_at', $date->year)
                 ->whereMonth('closed_at', $date->month)
                 ->count();
+
             $monthlyWonCount[] = [
                 'month' => $date->format('M'),
                 'count' => $count,
             ];
         }
 
-        // Recent deals
+        // Mengambil 10 Deal terakhir milik Sales.
         $recentDeals = Deal::with(['pipelineStage', 'lead'])
             ->where('assigned_to', $userId)
             ->latest()
@@ -324,6 +311,7 @@ class ReportService
     // Function untuk meramal member baru berdasarkan data yang masuk
     public function getForecastData(): array
     {
+        // Mengambil data Deal WON dan Deal OPEN untuk memperkirakan hasil penjualan.
         $now = Carbon::now();
         $months = [];
 
@@ -362,8 +350,12 @@ class ReportService
         $totalProjected = collect($months)->where('is_past', false)->sum('projected');
         $totalActual = collect($months)->where('is_past', true)->sum('actual');
 
+        // Menghitung perkiraan jumlah orang terbaik jika semua Deal OPEN berhasil.
         $bestCase = Deal::open()->count();
+        
+        // Mencari stage Closing untuk menghitung kemungkinan hasil terburuk.
         $closingStageId = PipelineStage::where('name', 'like', '%Closing%')->value('id');
+        
         $worstCase = $closingStageId ? Deal::open()->where('pipeline_stage_id', $closingStageId)->count() : 0;
 
         return [
@@ -375,48 +367,39 @@ class ReportService
         ];
     }
 
-    // ─── Audit Logs ───────────────────────────────────
-
-    public function getAuditLogs(array $filters = []): LengthAwarePaginator
-    {
-        return AuditLog::with('user')
-            ->filterAction($filters['action'] ?? null)
-            ->filterUser($filters['user_id'] ?? null)
-            ->filterModule($filters['module'] ?? null)
-            ->latest()
-            ->paginate(20)
-            ->withQueryString();
-    }
-
     // ─── Private Helpers ──────────────────────────────
-
-    private function getMemberTrend(int $months): array
-    {
-        $data = [];
-        $now = Carbon::now();
-
-        for ($i = $months - 1; $i >= 0; $i--) {
-            $date = $now->copy()->subMonths($i);
-            $members = Deal::won()
-                ->whereYear('closed_at', $date->year)
-                ->whereMonth('closed_at', $date->month)
-                ->count();
-
-            $data[] = [
-                'month' => $date->format('M'),
-                'count' => $members,
-            ];
-        }
-
-        return $data;
-    }
 
     private function getFunnelData(string $period = 'all', ?string $startDate = null, ?string $endDate = null): array
     {
+        // Membuat data alur Sales dari Lead sampai menjadi Deal WON.
         $totalLeads = $this->applyPeriodFilter(Lead::query(), 'created_at', $period, $startDate, $endDate)->count();
-        $qualified = $this->applyPeriodFilter(Lead::where('qualification', 'qualified'), 'created_at', $period, $startDate, $endDate)->count();
-        $deals = $this->applyPeriodFilter(Deal::query(), 'created_at', $period, $startDate, $endDate)->count();
-        $won = $this->applyPeriodFilter(Deal::won(), 'closed_at', $period, $startDate, $endDate)->count();
+
+        // Menghitung jumlah Lead yang sudah qualified.
+        $qualified = $this->applyPeriodFilter(
+            Lead::where('qualification', 'qualified'),
+            'created_at',
+            $period,
+            $startDate,
+            $endDate
+        )->count();
+
+        // Menghitung jumlah Lead yang sudah menjadi Deal.
+        $deals = $this->applyPeriodFilter(
+            Deal::query(),
+            'created_at',
+            $period,
+            $startDate,
+            $endDate
+        )->count();
+
+        // Menghitung jumlah Deal yang berhasil WON.
+        $won = $this->applyPeriodFilter(
+            Deal::won(),
+            'closed_at',
+            $period,
+            $startDate,
+            $endDate
+        )->count();
 
         return [
             ['label' => 'Leads', 'value' => $totalLeads, 'color' => '#3B82F6'],
@@ -428,18 +411,37 @@ class ReportService
 
     private function getSalesComparison(string $period = 'all', ?string $startDate = null, ?string $endDate = null): Collection
     {
+        // Mengambil semua Sales aktif untuk dibandingkan performanya.
         $salesUsers = User::role('Sales')->where('is_active', true)->get();
 
         return $salesUsers->map(fn($user) => [
+
+            // Menghitung jumlah Deal milik masing-masing Sales.
             'name' => $user->name,
-            'deals' => $this->applyPeriodFilter(Deal::where('assigned_to', $user->id), 'created_at', $period, $startDate, $endDate)->count(),
-            'won' => $this->applyPeriodFilter(Deal::where('assigned_to', $user->id)->won(), 'closed_at', $period, $startDate, $endDate)->count(),
+            'deals' => $this->applyPeriodFilter(
+                Deal::where('assigned_to', $user->id),
+                'created_at',
+                $period,
+                $startDate,
+                $endDate
+            )->count(),
+
+            // Menghitung jumlah Deal WON masing-masing Sales.
+            'won' => $this->applyPeriodFilter(
+                Deal::where('assigned_to', $user->id)->won(),
+                'closed_at',
+                $period,
+                $startDate,
+                $endDate
+            )->count(),
         ])->sortByDesc('won')->values();
     }
 
     private function getLeadSourcesMonthly(int $months): array
     {
+        // Mengambil sumber Lead yang masih aktif untuk melihat dari mana Lead berasal.
         $sources = LeadSource::where('is_active', true)->get();
+
         $now = Carbon::now();
         $labels = [];
         $datasets = [];
@@ -453,12 +455,16 @@ class ReportService
 
         foreach ($sources as $idx => $source) {
             $data = [];
+
             for ($i = $months - 1; $i >= 0; $i--) {
                 $date = $now->copy()->subMonths($i);
+
+                // Menghitung jumlah Lead dari sumber tertentu pada bulan tertentu.
                 $count = Lead::where('lead_source_id', $source->id)
                     ->whereYear('created_at', $date->year)
                     ->whereMonth('created_at', $date->month)
                     ->count();
+
                 $data[] = $count;
             }
 
@@ -478,9 +484,10 @@ class ReportService
     // 1. membuat fungsi applyPeriodFilter untuk membantu menyaring data berdasarkan periode waktu
     private function applyPeriodFilter($query, string $column, string $period, ?string $startDate = null, ?string $endDate = null)
     {
+        // Fungsi ini digunakan untuk menyaring data berdasarkan periode waktu yang dipilih.
         if ($period === 'custom' && $startDate && $endDate) {
             return $query->whereBetween($column, [
-                Carbon::parse($startDate)->startOfDay(), 
+                Carbon::parse($startDate)->startOfDay(),
                 Carbon::parse($endDate)->endOfDay()
             ]);
         }
@@ -490,9 +497,22 @@ class ReportService
         return match ($period) {
             // Sistem menyisipkan perintah SQL: Tampilkan data yang tanggalnya HANYA sama dengan hari ini.
             'today' => $query->whereDate($column, Carbon::today()),
-            'this_week' => $query->whereBetween($column, [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]),
-            'this_month' => $query->whereYear($column, Carbon::now()->year)->whereMonth($column, Carbon::now()->month),
+
+            // Mengambil data selama minggu ini.
+            'this_week' => $query->whereBetween($column, [
+                Carbon::now()->startOfWeek(),
+                Carbon::now()->endOfWeek()
+            ]),
+
+            // Mengambil data selama bulan ini.
+            'this_month' => $query
+                ->whereYear($column, Carbon::now()->year)
+                ->whereMonth($column, Carbon::now()->month),
+
+            // Mengambil data selama tahun ini.
             'this_year' => $query->whereYear($column, Carbon::now()->year),
+
+            // Kalau tidak ada filter periode, semua data ditampilkan.
             default => $query,
         };
     }

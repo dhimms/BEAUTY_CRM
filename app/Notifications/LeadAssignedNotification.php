@@ -14,18 +14,22 @@ class LeadAssignedNotification extends Notification
     /**
      * Create a new notification instance.
      */
+    //membuat instance baru untuk notification
     public $lead;
 
+    //membuat instance baru untuk notification
     public function __construct($lead)
     {
         $this->lead = $lead;
     }
 
+    //menentukan channel mana yang akan digunakan untuk mengirim notifikasi
     public function via(object $notifiable): array
     {
         return ['database'];
     }
 
+    //mengirim data notifikasi ke database
     public function toDatabase(object $notifiable): array
     {
         return [

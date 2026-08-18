@@ -5,6 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Model LostReason (Alasan Deal Gagal / Lost)
+ * Digunakan di: DealController, DealService, dan Modal Close Lost Views.
+ * Fungsi: Mengelola daftar opsi alasan kenapa sebuah transaksi deal gagal (Harga kemahalan, Tidak respon, Pilih kompetitor, dll).
+ */
 class LostReason extends Model
 {
     use HasFactory;
@@ -25,6 +30,7 @@ class LostReason extends Model
         ];
     }  
 
+    // Relasi ke tabel Deals (daftar deal yang gagal dengan alasan ini)
     // method untuk mendefinisikan relasi one to many dari lost reason ke deal
     // artinya satu lost reason bisa memiliki banyak deal 
     public function deals()
