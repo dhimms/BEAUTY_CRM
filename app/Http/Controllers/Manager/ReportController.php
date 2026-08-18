@@ -22,10 +22,12 @@ class ReportController extends Controller
     {
         return view('manager.reports.index');
     }
-
+    
     public function salesPerformance()
     {
+        // controller meminta data sales performance ke service
         $salesData = $this->reportService->getSalesPerformance();
+        // controller lalu me-return data tersebut ke view
         return view('manager.reports.sales-performance', compact('salesData'));
     }
 
