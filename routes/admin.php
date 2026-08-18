@@ -33,9 +33,9 @@ Route::middleware(['role:Admin'])->prefix('admin')->name('admin.')->group(functi
     Route::resource('lead-sources', LeadSourceController::class);
     Route::patch('lead-sources/{leadSource}/toggle', [LeadSourceController::class, 'toggle'])->name('lead-sources.toggle');
 
-    // Pipeline Stages
-    Route::resource('pipeline-stages', PipelineStageController::class);
+    // Pipeline Stages (reorder must be before resource to avoid route conflict)
     Route::patch('pipeline-stages/reorder', [PipelineStageController::class, 'reorder'])->name('pipeline-stages.reorder');
+    Route::resource('pipeline-stages', PipelineStageController::class);
 
     // Lost Reasons
     Route::resource('lost-reasons', LostReasonController::class);
