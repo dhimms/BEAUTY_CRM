@@ -20,4 +20,4 @@ class ActivityController extends Controller
 
         return redirect()->back()->with('success', 'Aktivitas berhasil dicatat.');
     }
-}
+} 
