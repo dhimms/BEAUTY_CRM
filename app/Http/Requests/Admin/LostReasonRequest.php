@@ -8,6 +8,7 @@ class LostReasonRequest extends FormRequest
 {
     public function authorize(): bool { return true; }
 
+    // method rules berfungsi untuk mendefinisikan aturan validasi untuk setiap kolom
     public function rules(): array
     {
         return [

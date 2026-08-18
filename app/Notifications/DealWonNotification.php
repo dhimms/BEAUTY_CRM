@@ -35,7 +35,7 @@ class DealWonNotification extends Notification
     {
         return [
             'title' => 'Deal Won!',
-            'message' => "{$this->deal->sales->name} has just won a deal: {$this->deal->name} (Rp " . number_format($this->deal->value, 0, ',', '.') . ")",
+            'message' => "{$this->deal->assignedUser?->name} has just won a deal: {$this->deal->name} (Rp " . number_format($this->deal->value, 0, ',', '.') . ")",
             'url' => route('admin.deals.index'),
             'type' => 'deal_won',
         ];

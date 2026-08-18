@@ -13,13 +13,20 @@ use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\ImportExportController;
 
+// ini adalah middleware yang kedua yang berugna untuk mengecek apakah user ini adalah admin atau tidak
+// dan juga untuk menentukan prefix dan nama route
+// prefix adalah awalan dari url /admin/  
+// name adalah awalan dari nama route /admin 
 Route::middleware(['role:Admin'])->prefix('admin')->name('admin.')->group(function () {
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // User Management
+    // resource adalah singkatan untuk 7 route sekaligus:
+    // index, create, store, show, edit, update, destroy
     Route::resource('users', UserController::class);
+    // patch adalah method untuk update data yang pakai togle karena dia hanya sebagian merubah datanya
     Route::patch('users/{user}/toggle', [UserController::class, 'toggle'])->name('users.toggle');
 
     // Lead Sources
@@ -28,7 +35,7 @@ Route::middleware(['role:Admin'])->prefix('admin')->name('admin.')->group(functi
 
     // Pipeline Stages
     Route::resource('pipeline-stages', PipelineStageController::class);
-    Route::post('pipeline-stages/reorder', [PipelineStageController::class, 'reorder'])->name('pipeline-stages.reorder');
+    Route::patch('pipeline-stages/reorder', [PipelineStageController::class, 'reorder'])->name('pipeline-stages.reorder');
 
     // Lost Reasons
     Route::resource('lost-reasons', LostReasonController::class);

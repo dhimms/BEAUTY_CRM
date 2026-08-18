@@ -21,7 +21,7 @@ class Lead extends Model
         'qualification',
         'notes',
         'created_by',
-    ];
+    ]; 
 
     protected function casts(): array
     {
@@ -48,7 +48,7 @@ class Lead extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function deals()
+    public function deals() 
     {
         return $this->hasMany(Deal::class);
     }
@@ -77,10 +77,10 @@ class Lead extends Model
         
         // By default, exclude leads that have been converted to Deals/Customers
         return $query->where('status', '!=', 'converted');
-    }
+    } 
 
     public function scopeFilterSource($query, ?int $sourceId)
-    {
+    { 
         return $sourceId ? $query->where('lead_source_id', $sourceId) : $query;
     }
 
@@ -92,7 +92,7 @@ class Lead extends Model
     public function scopeFilterAssigned($query, ?int $userId)
     {
         return $userId ? $query->where('assigned_to', $userId) : $query;
-    }
+    } 
 
     public function scopeSearch($query, ?string $search)
     {
@@ -108,7 +108,7 @@ class Lead extends Model
     // ─── Accessors ───────────────────────────────────
 
     public function getStatusColorAttribute(): string
-    {
+    { 
         return match ($this->status) {
             'new' => 'blue',
             'contacted' => 'purple',

@@ -13,15 +13,24 @@ use Spatie\Permission\Models\Role;
 class UserController extends Controller
 {
     public function index(Request $request)
-    {
+    {   
+        // query ini digunakan untuk mengambil data user
         $users = User::query()
+            // method when digunakan untuk mengecek apakah request memiliki parameter search
+            // jika request memiliki parameter search maka akan dilakukan query
+            // fn() adalah method closure yang digunakan untuk mengecek apakah request memiliki parameter search
+            // query ini akan mencari user berdasarkan nama, email, atau telepon
+            // variabel $v adalah value dari parameter search
+            // variabel $q adalah query builder yang isinya dari query awal User::query()
+            // jika tidak ada parameter search maka user yang akan dikeluarkan semua kecuali user yang tidak aktif
             ->when($request->search, fn($q, $v) => $q->where(function ($q) use ($v) {
                 $q->where('name', 'like', "%$v%")
                   ->orWhere('email', 'like', "%$v%")
                   ->orWhere('phone', 'like', "%$v%");
-            }))
+            })) 
             ->when($request->role, fn($q, $v) => $q->role($v))
             ->when($request->status !== null && $request->status !== '', fn($q) => $q->where('is_active', $request->status))
+            // with('roles') ini digunakan untuk mengatasi n+1 query agar pengambilannya sekali jalan saja dan tidak perlu 2x query
             ->with('roles')
             ->latest()
             ->paginate(15)
@@ -45,13 +54,20 @@ class UserController extends Controller
         if ($request->hasFile('avatar')) {
             $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
         }
-
+        // melakukan hassing password agar tidak tersimpan plain text
         $data['password'] = Hash::make($data['password']);
+        // mengubah nilai is_active menjadi boolean
+        // jika tidak ada isinya maka nilainya akan false secara default
         $data['is_active'] = $request->boolean('is_active', false);
+        // unset ini digunakan untuk menghapus key 'role' dan 'password_confirmation' dari array $data
+        // karena kedua key ini tidak ada di databased
+        // jadi tidak perlu disimpan ke database
         unset($data['role'], $data['password_confirmation']);
 
         $user = User::create($data);
-        $user->assignRole($request->role);
+        // assignRole ini digunakan untuk memberikan role ke user
+        // karena kita menggunakan spatie maka kita tinggal pakai fungsi assignRole
+        $user->assignRole($request->role); 
 
         return redirect()->route('admin.users.index')
             ->with('success', "User {$user->name} berhasil dibuat.");
@@ -96,7 +112,9 @@ class UserController extends Controller
             }
             $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
         }
-
+        
+        // cek apakah password kosong atau tidak
+        // jika tidak maka dilakukan proses hassing pada passwordnya
         if (!empty($data['password'])) {
             $data['password'] = Hash::make($data['password']);
         } else {
@@ -107,14 +125,16 @@ class UserController extends Controller
         unset($data['role'], $data['password_confirmation']);
 
         $user->update($data);
-        $user->syncRoles([$request->role]);
+        // syncRoles ini digunakan untuk update role user
+        // karena kita menggunakan spatie maka kita tinggal pakai fungsi syncRoles
+        $user->syncRoles([$request->role]);  
 
         return redirect()->route('admin.users.index')
             ->with('success', "User {$user->name} berhasil diperbarui.");
     }
 
     public function destroy(User $user)
-    {
+    {   // mengecek apakah user yang akan dihapus adalah user yang sedang login  
         if ($user->id === auth()->id()) {
             return back()->with('error', 'Anda tidak bisa menghapus akun sendiri.');
         }
