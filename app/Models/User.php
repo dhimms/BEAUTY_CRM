@@ -21,6 +21,7 @@ class User extends Authenticatable
         'avatar',
         'is_active',
         'monthly_target',
+        'revenue_target',
     ];
 
     protected $hidden = [

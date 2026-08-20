@@ -47,6 +47,11 @@ class Customer extends Model
         return $this->morphMany(Activity::class, 'activitable');
     }
 
+    public function deals()
+    {
+        return $this->hasMany(Deal::class, 'lead_id', 'lead_id');
+    }
+
 
     // ─── Scopes ──────────────────────────────────────
 
@@ -63,6 +68,20 @@ class Customer extends Model
             $q->where('name', 'like', "%{$search}%")
                 ->orWhere('email', 'like', "%{$search}%")
                 ->orWhere('phone', 'like', "%{$search}%");
+        });
+    }
+
+    public function scopeMinSpend($query, ?float $minSpend)
+    {
+        if (!$minSpend) return $query;
+        return $query->whereRaw("IFNULL((SELECT SUM(value) FROM deals WHERE deals.lead_id = customers.lead_id AND deals.status = 'won'), 0) >= ?", [$minSpend]);
+    }
+
+    public function scopeHasDealName($query, ?string $dealKeyword)
+    {
+        if (!$dealKeyword) return $query;
+        return $query->whereHas('deals', function ($q) use ($dealKeyword) {
+            $q->where('name', 'like', "%{$dealKeyword}%");
         });
     }
 }

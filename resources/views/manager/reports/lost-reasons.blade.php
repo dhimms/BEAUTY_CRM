@@ -8,7 +8,7 @@
     <li class="text-charcoal-700 font-medium">Lost Reasons</li>
 @endsection
 @section('page-header', 'Lost Reasons Analysis')
-@section('page-subtitle', 'Total deals lost: ' . $lostData['total'])
+@section('page-subtitle', 'Total potensi pendapatan hilang: Rp ' . number_format($lostData['total_lost_revenue'], 0, ',', '.'))
 @section('content')
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <x-card>
@@ -26,8 +26,9 @@
                 <thead>
                     <tr class="bg-charcoal-50/50">
                         <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Alasan</th>
-                        <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Jumlah</th>
-                        <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Persentase</th>
+                        <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Jumlah Deal</th>
+                        <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Potensi Pendapatan Hilang (Rp)</th>
+                        <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Persentase Deal</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-charcoal-100">
@@ -35,6 +36,7 @@
                         <tr class="hover:bg-charcoal-50/30">
                             <td class="px-6 py-3 font-medium text-charcoal-900">{{ $reason['name'] }}</td>
                             <td class="px-6 py-3 text-right text-charcoal-600">{{ $reason['count'] }}</td>
+                            <td class="px-6 py-3 text-right text-rose-500 font-mono font-medium">{{ number_format($reason['potential_revenue'], 0, ',', '.') }}</td>
                             <td class="px-6 py-3 text-right">
                                 <div class="flex items-center justify-end gap-2">
                                     <div class="w-16 h-2 bg-charcoal-100 rounded-full overflow-hidden">
@@ -60,7 +62,13 @@ document.addEventListener('DOMContentLoaded', function() {
         type: 'doughnut',
         data: {
             labels: data.map(d => d.name),
-            datasets: [{ data: data.map(d => d.count), backgroundColor: colors.slice(0, data.length), borderWidth: 0, hoverOffset: 8 }]
+            datasets: [{ 
+                label: 'Potensi Pendapatan Hilang',
+                data: data.map(d => d.potential_revenue), 
+                backgroundColor: colors.slice(0, data.length), 
+                borderWidth: 0, 
+                hoverOffset: 8 
+            }]
         },
         options: {
             responsive: true, maintainAspectRatio: false, cutout: '55%',

@@ -44,13 +44,29 @@ class CustomerService
             ->whereYear('created_at', $today->year)
             ->count();
 
+        // Aktivitas kontak yang dilakukan hari ini (termasuk blast pesan)
+        $contactedToday = Activity::with(['user', 'activitable'])
+            ->where('activitable_type', Customer::class)
+            ->whereDate('created_at', $today)
+            ->latest()
+            ->get();
+
+        // List customer untuk modal Buat Follow-up
+        $customers = Customer::orderBy('name')->get(['id', 'name']);
+
+        // List CS users untuk modal Tambah Customer
+        $csUsers = $this->getCsUsers();
+
         return compact(
             'totalCustomers',
             'activeCustomers',
             'todayFollowUps',
             'overdueFollowUps',
             'upcomingFollowUps',
-            'newCustomersThisMonth'
+            'newCustomersThisMonth',
+            'contactedToday',
+            'customers',
+            'csUsers'
         );
     }
 
@@ -59,9 +75,14 @@ class CustomerService
     public function getCustomers(array $filters = []): LengthAwarePaginator
     {
         return Customer::with('csUser')
+            ->select('customers.*')
+            ->selectRaw("IFNULL((SELECT SUM(value) FROM deals WHERE deals.lead_id = customers.lead_id AND deals.status = 'won'), 0) as total_spend")
+            ->selectRaw("(SELECT MAX(created_at) FROM activities WHERE activities.activitable_id = customers.id AND activities.activitable_type = ?) as last_contacted_at", [Customer::class])
             ->search($filters['search'] ?? null)
             ->when($filters['status'] ?? null, fn($q, $s) => $q->where('status', $s))
             ->when($filters['user_id'] ?? null, fn($q, $u) => $q->where('user_id', $u))
+            ->when($filters['min_spend'] ?? null, fn($q, $v) => $q->minSpend($v))
+            ->when($filters['deal_keyword'] ?? null, fn($q, $v) => $q->hasDealName($v))
             ->latest()
             ->paginate(15)
             ->withQueryString();
@@ -84,6 +105,38 @@ class CustomerService
 
         $customer->update($data);
         return $customer->fresh();
+    }
+
+    public function blastMessage(array $customerIds, string $channel, string $message): int
+    {
+        $count = 0;
+        foreach ($customerIds as $id) {
+            $customer = Customer::find($id);
+            if (!$customer) continue;
+
+            // Jika channel email, kirim email sungguhan
+            if ($channel === 'email' && !empty($customer->email)) {
+                try {
+                    \Illuminate\Support\Facades\Mail::to($customer->email)->send(new \App\Mail\BlastMessageMail($message));
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Gagal kirim blast email ke {$customer->email}: " . $e->getMessage());
+                }
+            }
+
+            // Catat ke dalam activity history
+            Activity::create([
+                'user_id' => auth()->id(),
+                'activitable_type' => Customer::class,
+                'activitable_id' => $id,
+                'type' => $channel === 'whatsapp' ? 'whatsapp' : 'email',
+                'description' => "Kirim Blast " . ucfirst($channel) . ": " . $message,
+                'status' => 'completed',
+                'activity_date' => now(),
+                'notes' => $message
+            ]);
+            $count++;
+        }
+        return $count;
     }
 
     // digunakan untuk mengatasi masalah performa N+1

@@ -7,16 +7,41 @@
     <li class="text-charcoal-300">/</li>
     <li class="text-charcoal-700 font-medium">Sales Performance</li>
 @endsection
-@section('page-header', 'Sales Performance Report')
+@section('page-header', 'Sales Performance')
+@section('page-subtitle', 'Evaluasi metrik dan pencapaian target per individu')
+@section('page-actions')
+    <form method="GET" action="{{ route('manager.reports.sales-performance') }}" class="flex items-center gap-2 text-sm">
+        <select name="filter_month" class="px-3 py-2 border border-charcoal-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 bg-white">
+            <option value="">Semua Bulan</option>
+            @php
+                $monthsList = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            @endphp
+            @foreach($monthsList as $index => $monthName)
+                <option value="{{ $index + 1 }}" {{ request('filter_month') == ($index + 1) ? 'selected' : '' }}>{{ $monthName }}</option>
+            @endforeach
+        </select>
+        <select name="filter_year" class="px-3 py-2 border border-charcoal-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 bg-white">
+            <option value="">Pilih Tahun</option>
+            @php $currentYear = date('Y'); @endphp
+            @for($y = $currentYear + 1; $y >= $currentYear - 4; $y--)
+                <option value="{{ $y }}" {{ request('filter_year', $currentYear) == $y ? 'selected' : '' }}>{{ $y }}</option>
+            @endfor
+        </select>
+        <button type="submit" class="px-4 py-2 bg-charcoal-900 text-white rounded-lg font-medium hover:bg-charcoal-800 transition-colors">Filter</button>
+        @if(request('filter_year') && request('filter_month'))
+            <a href="{{ route('manager.reports.sales-performance') }}" class="px-3 py-2 text-charcoal-500 hover:text-charcoal-700">Reset</a>
+        @endif
+    </form>
+@endsection
 @section('content')
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
     @php
-        $totalWon = $salesData->sum('won');
-        $totalTarget = $salesData->sum('target');
+        $totalWon = $salesData->sum('revenue_achieved');
+        $totalTarget = $salesData->sum('revenue_target');
         $totalAvgDays = $salesData->where('won', '>', 0)->avg('avg_close_time') ?? 0;
     @endphp
-    <x-kpi-card label="Total Target Member" :value="$totalTarget" color="amber" icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>' />
-    <x-kpi-card label="Total Member Didapat" :value="$totalWon" color="emerald" icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>' />
+    <x-kpi-card label="Total Target Pendapatan" :value="'Rp ' . number_format($totalTarget, 0, ',', '.')" color="amber" icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>' />
+    <x-kpi-card label="Total Pendapatan Aktual" :value="'Rp ' . number_format($totalWon, 0, ',', '.')" color="emerald" icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>' />
     <x-kpi-card label="Total Activities" :value="$salesData->sum('activities')" color="blue" icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>' />
     <x-kpi-card label="Avg Close Time" :value="round($totalAvgDays, 1) . ' Hari'" color="rose" icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>' />
 </div>
@@ -36,10 +61,11 @@
                     <th class="px-4 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Leads</th>
                     <th class="px-4 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Qualified</th>
                     <th class="px-4 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Deals</th>
-                    <th class="px-4 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Won</th>
-                    <th class="px-4 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Lost</th>
+                    <th class="px-4 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Won (Deals)</th>
+                    <th class="px-4 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Lost (Deals)</th>
                     <th class="px-4 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Win Rate</th>
-                    <th class="px-4 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Target</th>
+                    <th class="px-4 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Pendapatan (Rp)</th>
+                    <th class="px-4 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Target (Rp)</th>
                     <th class="px-4 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Activities</th>
                     <th class="px-4 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Avg Close Time</th>
                 </tr>
@@ -59,7 +85,8 @@
                         <td class="px-4 py-3 text-right font-medium text-emerald-600">{{ $s['won'] }}</td>
                         <td class="px-4 py-3 text-right text-rose-500">{{ $s['lost'] }}</td>
                         <td class="px-4 py-3 text-right font-medium {{ $s['win_rate'] >= 50 ? 'text-emerald-600' : 'text-charcoal-500' }}">{{ $s['win_rate'] }}%</td>
-                        <td class="px-4 py-3 text-right font-mono text-charcoal-900">{{ $s['target'] }}</td>
+                        <td class="px-4 py-3 text-right font-medium text-emerald-600 font-mono">{{ number_format($s['revenue_achieved'], 0, ',', '.') }}</td>
+                        <td class="px-4 py-3 text-right font-mono text-charcoal-900">{{ number_format($s['revenue_target'], 0, ',', '.') }}</td>
                         <td class="px-4 py-3 text-right text-charcoal-600">{{ $s['activities'] }}</td>
                         <td class="px-4 py-3 text-right text-charcoal-600">{{ $s['avg_close_time'] }} Hari</td>
                     </tr>
@@ -78,8 +105,8 @@ document.addEventListener('DOMContentLoaded', function() {
         data: {
             labels: data.map(d => d.name),
             datasets: [
-                { label: 'Won', data: data.map(d => d.won), backgroundColor: '#10B981', borderRadius: 6 },
-                { label: 'Lost', data: data.map(d => d.lost), backgroundColor: '#EF4444', borderRadius: 6 },
+                { label: 'Pendapatan Aktual (Rp)', data: data.map(d => d.revenue_achieved), backgroundColor: '#10B981', borderRadius: 6 },
+                { label: 'Target (Rp)', data: data.map(d => d.revenue_target), backgroundColor: '#F59E0B', borderRadius: 6 },
             ]
         },
         options: {

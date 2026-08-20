@@ -23,17 +23,29 @@ class ReportController extends Controller
         return view('manager.reports.index');
     }
 
-    public function salesPerformance()
+    public function salesPerformance(\Illuminate\Http\Request $request)
     {
-        $salesData = $this->reportService->getSalesPerformance();
+        $filterYear = $request->get('filter_year');
+        $filterMonth = $request->get('filter_month');
+        
+        if ($filterMonth && !$filterYear) {
+            $filterYear = date('Y');
+        }
+
+        $salesData = $this->reportService->getSalesPerformance($filterYear, $filterMonth);
         return view('manager.reports.sales-performance', compact('salesData'));
     }
 
-    public function revenue()
+    public function revenue(\Illuminate\Http\Request $request)
     {
-        // Meskipun nama fungsinya "revenue", kita sudah mengubah targetnya menjadi Member Baru.
-        // Di sini Controller cukup melempar tugas ke Service untuk menghitung tren selama 12 bulan terakhir.
-        $revenueData = $this->reportService->getMemberAcquisitionReport(12);
+        $filterYear = $request->get('filter_year');
+        $filterMonth = $request->get('filter_month');
+        
+        if ($filterMonth && !$filterYear) {
+            $filterYear = date('Y');
+        }
+
+        $revenueData = $this->reportService->getRevenueReport(12, $filterYear, $filterMonth);
         return view('manager.reports.revenue', compact('revenueData'));
     }
 

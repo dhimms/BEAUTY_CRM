@@ -49,7 +49,7 @@ class DealController extends Controller
     public function index(Request $request)
     {
         $deals = Deal::where('assigned_to', auth()->id())
-            ->filterStatus($request->status)
+            ->where('status', 'open') // Hanya tampilkan deal yang masih berjalan (open)
             ->filterStage($request->stage)
             ->when($request->search, function ($q, $search) {
                 $q->where(function ($q) use ($search) {
@@ -193,7 +193,7 @@ class DealController extends Controller
         }
 
         if ($request->outcome === 'won') {
-            $this->dealService->closeWon($deal);
+            $this->dealService->closeWon($deal, $request->product_name, $request->value);
 
             $deal->load('assignedUser');
             $managersAndAdmins = User::role(['Admin', 'Manager'])->get();
@@ -206,5 +206,23 @@ class DealController extends Controller
             return redirect()->route('sales.deals.show', $deal)
                 ->with('success', 'Deal ditandai sebagai LOST.');
         }
+    }
+
+    public function blast(Request $request)
+    {
+        $request->validate([
+            'deal_ids' => 'required|array',
+            'deal_ids.*' => 'exists:deals,id',
+            'channel' => 'required|in:whatsapp,email',
+            'message' => 'required|string|max:1000'
+        ]);
+
+        $count = $this->dealService->blastMessage(
+            $request->deal_ids,
+            $request->channel,
+            $request->message
+        );
+
+        return back()->with('success', "Pesan blast berhasil dikirim ke $count lead via " . ucfirst($request->channel));
     }
 }

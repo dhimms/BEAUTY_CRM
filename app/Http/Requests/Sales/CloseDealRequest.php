@@ -20,6 +20,8 @@ class CloseDealRequest extends FormRequest
             'outcome'        => 'required|in:won,lost',//memastikan outcome yang dipilih ada di database
             'lost_reason_id' => 'required_if:outcome,lost|nullable|exists:lost_reasons,id',//memastikan alasan lost yang dipilih ada di database
             'lost_notes'     => 'required_if:outcome,lost|nullable|string|min:10|max:1000',//memastikan catatan lost diisi dan tidak lebih dari 1000 karakter
+            'product_name'   => 'required_if:outcome,won|nullable|string|max:255',
+            'value'          => 'required_if:outcome,won|nullable|numeric|min:0',
         ];
     }
 
@@ -32,6 +34,8 @@ class CloseDealRequest extends FormRequest
             'lost_reason_id.required_if' => 'Alasan lost wajib dipilih.',//pesan error jika alasan lost tidak diisi
             'lost_reason_id.exists'     => 'Alasan lost tidak valid.',//pesan error jika alasan lost tidak valid
             'lost_notes.required_if'    => 'Catatan lost wajib diisi.',//pesan error jika catatan lost tidak diisi
+            'product_name.required_if'  => 'Nama produk wajib diisi saat Deal Won.',
+            'value.required_if'         => 'Harga produk (revenue) wajib diisi saat Deal Won.',
         ];
     }
 }

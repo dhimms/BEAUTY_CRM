@@ -22,20 +22,15 @@
             Next Stage
         </button>
 
-        {{-- Mark Won --}}
-        <form action="{{ route('sales.deals.close', $deal) }}" method="POST" class="inline">
-            @csrf
-            <input type="hidden" name="outcome" value="won">
-            @php $isClosingStage = strtolower(trim($deal->pipelineStage->name)) === 'closing'; @endphp
-            <button type="submit" 
-                    @if($isClosingStage) onclick="return confirm('Tandai deal ini sebagai WON? Customer baru akan dibuat.')" @endif
-                    @disabled(!$isClosingStage)
-                    class="inline-flex items-center gap-2 px-4 py-2 {{ $isClosingStage ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-emerald-100 text-emerald-500 cursor-not-allowed' }} text-sm font-medium rounded-xl transition-colors"
-                    @if(!$isClosingStage) title="Deal harus mencapai tahap Closing terlebih dahulu" @endif>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                Won
-            </button>
-        </form>
+        {{-- Mark Won (open modal) --}}
+        @php $isClosingStage = strtolower(trim($deal->pipelineStage->name)) === 'closing'; @endphp
+        <button @if($isClosingStage) onclick="document.getElementById('wonModal').classList.remove('hidden')" @endif
+                @disabled(!$isClosingStage)
+                class="inline-flex items-center gap-2 px-4 py-2 {{ $isClosingStage ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-emerald-100 text-emerald-500 cursor-not-allowed' }} text-sm font-medium rounded-xl transition-colors"
+                @if(!$isClosingStage) title="Deal harus mencapai tahap Closing terlebih dahulu" @endif>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Won
+        </button>
 
         {{-- Mark Lost (open modal) --}}
         <button onclick="document.getElementById('lostModal').classList.remove('hidden')"
@@ -120,6 +115,16 @@
                     <dt class="text-sm text-charcoal-500">Nama Deal</dt>
                     <dd class="text-sm font-medium text-charcoal-800">{{ $deal->name }}</dd>
                 </div>
+                @if($deal->status === 'won')
+                <div class="flex justify-between py-2 border-b border-charcoal-100">
+                    <dt class="text-sm text-charcoal-500">Produk Dibeli</dt>
+                    <dd class="text-sm font-medium text-emerald-700">{{ $deal->product_name ?? '-' }}</dd>
+                </div>
+                <div class="flex justify-between py-2 border-b border-charcoal-100">
+                    <dt class="text-sm text-charcoal-500">Revenue</dt>
+                    <dd class="text-sm font-bold text-emerald-700">Rp {{ number_format($deal->value, 0, ',', '.') }}</dd>
+                </div>
+                @endif
                 <div class="flex justify-between py-2 border-b border-charcoal-100">
                     <dt class="text-sm text-charcoal-500">Stage</dt>
                     <dd>
@@ -273,6 +278,43 @@
             </div>
         @endif
     </x-card>
+
+    {{-- Won Modal --}}
+    <div id="wonModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+        <div class="fixed inset-0 bg-black/40" onclick="document.getElementById('wonModal').classList.add('hidden')"></div>
+        <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
+            <div class="px-6 py-4 border-b border-charcoal-100 flex items-center justify-between">
+                <h3 class="font-serif text-lg font-semibold text-emerald-700">Tandai Deal sebagai WON 🎉</h3>
+                <button onclick="document.getElementById('wonModal').classList.add('hidden')" class="text-charcoal-400 hover:text-charcoal-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form action="{{ route('sales.deals.close', $deal) }}" method="POST" class="p-6 space-y-4">
+                @csrf
+                <input type="hidden" name="outcome" value="won">
+
+                <div>
+                    <label class="block text-xs font-mono text-charcoal-400 uppercase mb-1">Nama Produk yang Dibeli *</label>
+                    <input type="text" name="product_name" required class="w-full px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-300" placeholder="Contoh: Paket Glowing Premium">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-mono text-charcoal-400 uppercase mb-1">Total Harga (Revenue) *</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-charcoal-500 text-sm font-medium">Rp</span>
+                        </div>
+                        <input type="number" name="value" required min="0" step="1000" class="w-full pl-10 px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-300" placeholder="5000000">
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="document.getElementById('wonModal').classList.add('hidden')" class="px-4 py-2 text-sm text-charcoal-600 hover:text-charcoal-800">Batal</button>
+                    <button type="submit" class="px-6 py-2 bg-emerald-600 text-white text-sm font-medium rounded-xl hover:bg-emerald-700 transition-colors" onclick="return confirm('Tandai deal ini sebagai WON? Customer baru akan dibuat.')">Tandai Won</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     {{-- Lost Modal --}}
     <div id="lostModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">

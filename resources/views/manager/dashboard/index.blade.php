@@ -6,15 +6,34 @@
 @section('page-subtitle', 'Ringkasan performa tim sales & bisnis')
 @section('page-actions')
     <form method="GET" action="{{ route('manager.dashboard') }}" class="flex items-center gap-2" x-data="{ period: '{{ request('period', 'all') }}' }">
-        <select name="period" x-model="period" @change="if (period !== 'custom') $el.form.submit()" class="px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white font-medium text-charcoal-700">
+        <select name="period" x-model="period" @change="if (period !== 'custom' && period !== 'month_year') $el.form.submit()" class="px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white font-medium text-charcoal-700">
             <option value="all">Semua Waktu</option>
             <option value="today">Hari Ini</option>
             <option value="this_week">Minggu Ini</option>
             <option value="this_month">Bulan Ini</option>
             <option value="this_year">Tahun Ini</option>
+            <option value="month_year">Pilih Bulan & Tahun</option>
             <option value="custom">Pilih Tanggal</option>
         </select>
         
+        <div x-show="period === 'month_year'" x-cloak class="flex items-center gap-2">
+            <select name="filter_month" class="px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white" :required="period === 'month_year'">
+                @php
+                    $months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                @endphp
+                @foreach($months as $index => $month)
+                    <option value="{{ $index + 1 }}" {{ request('filter_month', \Carbon\Carbon::now()->month) == ($index + 1) ? 'selected' : '' }}>{{ $month }}</option>
+                @endforeach
+            </select>
+            <select name="filter_year" class="px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white" :required="period === 'month_year'">
+                @php $currentYear = \Carbon\Carbon::now()->year; @endphp
+                @for($y = $currentYear; $y >= $currentYear - 5; $y--)
+                    <option value="{{ $y }}" {{ request('filter_year', $currentYear) == $y ? 'selected' : '' }}>{{ $y }}</option>
+                @endfor
+            </select>
+            <button type="submit" class="px-3 py-2 bg-charcoal-900 text-white rounded-xl text-sm font-medium hover:bg-charcoal-800 transition-colors">Terapkan</button>
+        </div>
+
         <div x-show="period === 'custom'" x-cloak class="flex items-center gap-2">
             <input type="date" name="start_date" value="{{ request('start_date') }}" class="px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white" :required="period === 'custom'">
             <span class="text-charcoal-400 font-medium">-</span>
@@ -27,33 +46,47 @@
 @section('content')
 {{-- KPI Cards --}}
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-    <x-kpi-card label="Total Leads" :value="number_format($totalLeads)" color="amber"
-        icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>' />
-
-    <x-kpi-card label="Total Deals" :value="number_format($totalDeals)" color="blue"
-        icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>' />
-
-    <x-kpi-card label="Won Deals" :value="number_format($wonDeals)" color="emerald"
-        icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>' />
+    <x-kpi-card label="Total Pendapatan" :value="'Rp ' . number_format($totalRevenue, 0, ',', '.')" color="emerald"
+        icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>' />
 
     <div class="bg-white rounded-xl border border-charcoal-200 shadow-sm p-6 hover:shadow-md transition-shadow">
-        <p class="text-xs font-mono text-charcoal-400 uppercase tracking-wider">Win Rate</p>
+        <p class="text-xs font-mono text-charcoal-400 uppercase tracking-wider">Target Pendapatan</p>
         <div class="flex items-center gap-4 mt-2">
-            <div class="relative w-16 h-16">
-                <canvas id="winRateChart"></canvas>
+            <div class="relative w-16 h-16 flex-shrink-0">
+                <canvas id="targetAchievementChart"></canvas>
                 <div class="absolute inset-0 flex items-center justify-center">
-                    <span class="text-sm font-bold text-amber-700">{{ $winRate }}%</span>
+                    <span class="text-sm font-bold text-emerald-700">{{ $targetAchievementRaw }}%</span>
                 </div>
+            </div>
+            <div class="flex flex-col flex-1 min-w-0">
+                <span class="text-[10px] text-charcoal-500 uppercase tracking-wider">Target Tim:</span>
+                @php
+                    $formattedTarget = 'Rp ' . number_format($totalRevenueTarget, 0, ',', '.');
+                    if ($totalRevenueTarget >= 1000000000) {
+                        $formattedTarget = 'Rp ' . rtrim(rtrim(number_format($totalRevenueTarget / 1000000000, 1, ',', '.'), '0'), ',') . ' Miliar';
+                    } elseif ($totalRevenueTarget >= 1000000) {
+                        $formattedTarget = 'Rp ' . rtrim(rtrim(number_format($totalRevenueTarget / 1000000, 1, ',', '.'), '0'), ',') . ' Jt';
+                    }
+                @endphp
+                <span class="text-sm font-semibold text-charcoal-800 truncate" title="Rp {{ number_format($totalRevenueTarget, 0, ',', '.') }} / {{ $activeSalesCount }} Orang">
+                    {{ $formattedTarget }} / {{ $activeSalesCount }} Org
+                </span>
             </div>
         </div>
     </div>
+
+    <x-kpi-card label="Total Deals" :value="number_format($totalDeals)" color="blue"
+        icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>' />
+
+    <x-kpi-card label="Barang Paling Laris" :value="$topProduct" color="purple"
+        icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>' />
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-    {{-- Member Trend --}}
+    {{-- Revenue Trend --}}
     <x-card>
-        <h3 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Member Baru (12 Bulan)</h3>
-        <div style="height: 280px;"><canvas id="memberTrendChart"></canvas></div>
+        <h3 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Trend Pendapatan (12 Bulan)</h3>
+        <div style="height: 280px;"><canvas id="revenueTrendChart"></canvas></div>
     </x-card>
 
     {{-- Sales Funnel --}}
@@ -112,9 +145,9 @@
                 <tr class="bg-charcoal-50/50">
                     <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">#</th>
                     <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Sales</th>
-                    <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Leads</th>
-                    <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Target</th>
-                    <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Win Rate</th>
+                    <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Target (Rp)</th>
+                    <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Pendapatan (Rp)</th>
+                    <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Pencapaian (%)</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-charcoal-100">
@@ -137,11 +170,10 @@
                                 <span class="font-medium text-charcoal-900">{{ $member['name'] }}</span>
                             </div>
                         </td>
-                        <td class="px-6 py-4 text-right text-charcoal-600">{{ $member['leads'] }}</td>
-                        <td class="px-6 py-4 text-right font-medium text-emerald-600">{{ $member['won'] }}</td>
-                        <td class="px-6 py-4 text-right font-mono text-charcoal-900">{{ $member['target'] }}</td>
+                        <td class="px-6 py-4 text-right font-mono text-charcoal-600">{{ number_format($member['revenue_target'], 0, ',', '.') }}</td>
+                        <td class="px-6 py-4 text-right font-medium font-mono text-emerald-600">{{ number_format($member['revenue_achieved'], 0, ',', '.') }}</td>
                         <td class="px-6 py-4 text-right">
-                            <span class="font-medium {{ $member['win_rate'] >= 50 ? 'text-emerald-600' : 'text-charcoal-500' }}">{{ $member['win_rate'] }}%</span>
+                            <span class="font-medium {{ $member['progress_percentage'] >= 100 ? 'text-emerald-600' : 'text-amber-500' }}">{{ $member['progress_percentage'] }}%</span>
                         </td>
                     </tr>
                 @empty
@@ -158,63 +190,78 @@
 document.addEventListener('DOMContentLoaded', function() {
     const warmPalette = ['#F59E0B', '#D97706', '#B45309', '#92400E', '#78350F', '#EF4444', '#3B82F6'];
 
-    // Win Rate Doughnut
-    new Chart(document.getElementById('winRateChart'), {
+    function formatRupiah(value) {
+        if (value >= 1000000000) {
+            return 'Rp ' + (value / 1000000000).toFixed(1).replace('.0', '') + ' Miliar';
+        } else if (value >= 1000000) {
+            return 'Rp ' + (value / 1000000).toFixed(1).replace('.0', '') + ' Jt';
+        }
+        return 'Rp ' + value.toLocaleString('id-ID');
+    }
+
+    // Target Achievement Doughnut
+    new Chart(document.getElementById('targetAchievementChart'), {
         type: 'doughnut',
         data: {
             datasets: [{
-                data: [{{ $winRate }}, {{ 100 - $winRate }}],
-                backgroundColor: ['#D97706', '#F3F4F6'],
+                data: [{{ $targetAchievement }}, {{ max(0, 100 - $targetAchievement) }}],
+                backgroundColor: ['#10B981', '#F3F4F6'],
                 borderWidth: 0,
             }]
         },
         options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
     });
 
-    // Member Trend Area Chart
-    const memberTrend = @json($memberTrend);
-    new Chart(document.getElementById('memberTrendChart'), {
+    // Revenue Trend Area Chart
+    const revenueTrend = @json($revenueTrend);
+    new Chart(document.getElementById('revenueTrendChart'), {
         type: 'line',
         data: {
-            labels: memberTrend.map(d => d.month),
+            labels: revenueTrend.map(d => d.month),
             datasets: [{
-                label: 'Member Baru',
-                data: memberTrend.map(d => d.count),
-                borderColor: '#D97706',
-                backgroundColor: 'rgba(217, 119, 6, 0.1)',
+                label: 'Pendapatan',
+                data: revenueTrend.map(d => d.revenue),
+                borderColor: '#10B981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
                 fill: true,
                 tension: 0.4,
-                pointBackgroundColor: '#D97706',
+                pointBackgroundColor: '#10B981',
                 pointRadius: 4,
                 pointHoverRadius: 6,
             }]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            plugins: { 
+                legend: { display: false },
+                tooltip: { callbacks: { label: function(context) { return 'Rp ' + context.parsed.y.toLocaleString('id-ID'); } } }
+            },
             scales: {
-                y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } }, grid: { color: '#F3F4F6' } },
+                y: { beginAtZero: true, ticks: { font: { size: 11 }, callback: function(value) { return formatRupiah(value); } }, grid: { color: '#F3F4F6' } },
                 x: { ticks: { font: { size: 11 } }, grid: { display: false } }
             }
         }
     });
 
-    // Sales Comparison Dual Bar
+    // Sales Comparison (Target as Line, Achieved as Bar)
     const salesComp = @json($salesComparison);
     new Chart(document.getElementById('salesComparisonChart'), {
         type: 'bar',
         data: {
             labels: salesComp.map(d => d.name),
             datasets: [
-                { label: 'Deals', data: salesComp.map(d => d.deals), backgroundColor: '#F59E0B', borderRadius: 6 },
-                { label: 'Won (Member)', data: salesComp.map(d => d.won), backgroundColor: '#10B981', borderRadius: 6 },
+                { type: 'line', label: 'Target Pendapatan', data: salesComp.map(d => d.target_revenue), borderColor: '#F59E0B', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, fill: false },
+                { type: 'bar', label: 'Pendapatan Dicapai', data: salesComp.map(d => d.achieved_revenue), backgroundColor: '#10B981', borderRadius: 6 },
             ]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { labels: { font: { size: 11, family: 'DM Sans' }, usePointStyle: true } } },
+            plugins: { 
+                legend: { labels: { font: { size: 11, family: 'DM Sans' }, usePointStyle: true } },
+                tooltip: { callbacks: { label: function(context) { return context.dataset.label + ': Rp ' + context.parsed.y.toLocaleString('id-ID'); } } }
+            },
             scales: {
-                y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#F3F4F6' } },
+                y: { beginAtZero: true, ticks: { callback: function(value) { return formatRupiah(value); } }, grid: { color: '#F3F4F6' } },
                 x: { grid: { display: false } }
             }
         }

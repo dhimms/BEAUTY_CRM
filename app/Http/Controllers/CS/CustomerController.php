@@ -18,7 +18,7 @@ class CustomerController extends Controller
 
     public function index(Request $request)
     {
-        $customers = $this->customerService->getCustomers($request->only(['search', 'status', 'user_id']));
+        $customers = $this->customerService->getCustomers($request->only(['search', 'status', 'user_id', 'min_spend', 'deal_keyword']));
         $csUsers = $this->customerService->getCsUsers();
 
         return view('cs.customers.index', compact('customers', 'csUsers'));
@@ -58,5 +58,23 @@ class CustomerController extends Controller
 
         return redirect()->route('cs.customers.show', $customer)
             ->with('success', 'Data customer berhasil diperbarui.');
+    }
+
+    public function blast(Request $request)
+    {
+        $request->validate([
+            'customer_ids' => 'required|array',
+            'customer_ids.*' => 'exists:customers,id',
+            'channel' => 'required|in:whatsapp,email',
+            'message' => 'required|string|max:1000'
+        ]);
+
+        $count = $this->customerService->blastMessage(
+            $request->customer_ids,
+            $request->channel,
+            $request->message
+        );
+
+        return back()->with('success', "Pesan blast berhasil dikirim ke $count customer via " . ucfirst($request->channel));
     }
 }

@@ -23,7 +23,8 @@
                 <thead>
                     <tr class="bg-charcoal-50/50">
                         <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Source</th>
-                        <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Leads</th>
+                        <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Leads Dihasilkan</th>
+                        <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Total Pendapatan (Rp)</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-charcoal-100">
@@ -36,6 +37,7 @@
                                 </div>
                             </td>
                             <td class="px-6 py-3 text-right font-mono text-charcoal-700">{{ $source['count'] }}</td>
+                            <td class="px-6 py-3 text-right font-medium text-emerald-600 font-mono">{{ number_format($source['revenue'], 0, ',', '.') }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -52,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
         type: 'bar',
         data: {
             labels: data.map(d => d.name),
-            datasets: [{ label: 'Leads', data: data.map(d => d.count), backgroundColor: data.map(d => d.color), borderRadius: 8 }]
+            datasets: [{ label: 'Pendapatan (Rp)', data: data.map(d => d.revenue), backgroundColor: data.map(d => d.color), borderRadius: 8 }]
         },
         options: {
             responsive: true, maintainAspectRatio: false, indexAxis: 'y',

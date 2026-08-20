@@ -74,6 +74,16 @@
                                         } elseif ($log->action === 'deleted' && is_array($log->old_values)) {
                                             $changedKeys = array_keys($log->old_values);
                                         }
+
+                                        // Filter teknis
+                                        $ignoredKeys = ['id', 'created_at', 'updated_at', 'deleted_at', 'remember_token', 'password'];
+                                        $changedKeys = array_filter($changedKeys, fn($key) => !in_array($key, $ignoredKeys));
+
+                                        if ($log->action === 'updated') {
+                                            $changedKeys = array_filter($changedKeys, function($key) use ($log) {
+                                                return ($log->old_values[$key] ?? null) !== ($log->new_values[$key] ?? null);
+                                            });
+                                        }
                                     @endphp
 
                                     @foreach($changedKeys as $key)
@@ -114,7 +124,17 @@
                                         </div>
                                     @endforeach
                                     @if(empty($changedKeys))
-                                        <div class="text-center py-4 text-charcoal-400 text-sm">Tidak ada detail perubahan (atau format data tidak didukung).</div>
+                                        <div class="text-center py-4 text-charcoal-400 text-sm">
+                                            @if($log->action === 'created')
+                                                Data baru berhasil ditambahkan ke sistem.
+                                            @elseif($log->action === 'deleted')
+                                                Data telah dihapus secara permanen dari sistem.
+                                            @elseif($log->action === 'updated')
+                                                Pembaruan disimpan (hanya perubahan waktu/sistem, data inti tetap).
+                                            @else
+                                                Aktivitas tercatat oleh sistem.
+                                            @endif
+                                        </div>
                                     @endif
                                 </div>
                                 @if($log->ip_address)

@@ -34,6 +34,11 @@ class DashboardController extends Controller
             ->whereMonth('closed_at', now()->month)
             ->whereYear('closed_at', now()->year)
             ->count();
+            
+        //menampilkan total keseluruhan deal yang dimenangkan
+        $wonTotal = Deal::where('assigned_to', $userId)
+            ->where('status', 'won')
+            ->count();
 
         // ─── Today's Follow-ups ─────────────────────────
         //menampilkan aktivitas follow up hari ini
@@ -67,11 +72,11 @@ class DashboardController extends Controller
             ->get();
 
         // ─── Recent Activities ──────────────────────────
-        //menampilkan aktivitas terakhir 5 aktivitas
+        //menampilkan aktivitas hari ini
         $recentActivities = Activity::where('user_id', $userId)
+            ->whereDate('activity_date', today())
             ->with('activitable')
             ->latest('activity_date')
-            ->limit(5)
             ->get();
 
         // ─── Target vs Actual (Jumlah Member) ───────────
@@ -81,18 +86,40 @@ class DashboardController extends Controller
         $targetPercent = $monthlyTarget > 0
             ? min(100, round(($monthlyActual / $monthlyTarget) * 100))
             : 0;
+
+        // ─── Revenue Target (Uang) ───────────
+        $revenueTarget = auth()->user()->revenue_target ?? 0;
+        $revenueActual = Deal::where('assigned_to', $userId)
+            ->where('status', 'won')
+            ->whereMonth('closed_at', now()->month)
+            ->whereYear('closed_at', now()->year)
+            ->sum('value');
+            
+        $revenueTotal = Deal::where('assigned_to', $userId)
+            ->where('status', 'won')
+            ->sum('value');
+            
+        $revenuePercentRaw = $revenueTarget > 0 ? round(($revenueActual / $revenueTarget) * 100, 1) : ($revenueActual > 0 ? 100 : 0);
+        $revenuePercent = min(100, $revenuePercentRaw);
+
         //mengirim data ke tampian blade
         return view('sales.dashboard.index', compact(
             'myLeadsCount',
             'myDealsCount',
             'wonThisMonth',
+            'wonTotal',
             'todayFollowUps',
             'pipelineSummary',
             'upcomingFollowUps',
             'recentActivities',
             'monthlyTarget',
             'monthlyActual',
-            'targetPercent'
+            'targetPercent',
+            'revenueTarget',
+            'revenueActual',
+            'revenueTotal',
+            'revenuePercent',
+            'revenuePercentRaw'
         ));
     }
 }

@@ -16,10 +16,9 @@
                 <tr class="bg-charcoal-50/50">
                     <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Rank</th>
                     <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Sales Person</th>
-                    <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Leads</th>
-                    <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Deals Won</th>
-                    <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Target</th>
-                    <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Win Rate</th>
+                    <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Target (Rp)</th>
+                    <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Pendapatan (Rp)</th>
+                    <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Pencapaian (%)</th>
                     <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Aksi</th>
                 </tr>
             </thead>
@@ -52,21 +51,18 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 text-right text-charcoal-600">{{ $member['leads'] }}</td>
-                        <td class="px-6 py-4 text-right">
-                            <span class="font-semibold text-emerald-600">{{ $member['won'] }}</span>
-                        </td>
-                        <td class="px-6 py-4 text-right font-mono font-semibold text-charcoal-900">
-                            {{ $member['target'] }}
+                        <td class="px-6 py-4 text-right font-mono text-charcoal-600">{{ number_format($member['revenue_target'], 0, ',', '.') }}</td>
+                        <td class="px-6 py-4 text-right font-mono">
+                            <span class="font-semibold text-emerald-600">{{ number_format($member['revenue_achieved'], 0, ',', '.') }}</span>
                         </td>
                         <td class="px-6 py-4 text-right">
                             <div class="flex items-center justify-end gap-2">
                                 <div class="w-16 h-2 bg-charcoal-100 rounded-full overflow-hidden">
-                                    <div class="h-full rounded-full {{ $member['win_rate'] >= 50 ? 'bg-emerald-500' : 'bg-amber-500' }}"
-                                        style="width: {{ min($member['win_rate'], 100) }}%"></div>
+                                    <div class="h-full rounded-full {{ $member['progress_percentage'] >= 100 ? 'bg-emerald-500' : 'bg-amber-500' }}"
+                                        style="width: {{ min($member['progress_percentage'], 100) }}%"></div>
                                 </div>
-                                <span class="text-sm font-medium {{ $member['win_rate'] >= 50 ? 'text-emerald-600' : 'text-amber-600' }}">
-                                    {{ $member['win_rate'] }}%
+                                <span class="text-sm font-medium {{ $member['progress_percentage'] >= 100 ? 'text-emerald-600' : 'text-amber-600' }}">
+                                    {{ $member['progress_percentage'] }}%
                                 </span>
                             </div>
                         </td>

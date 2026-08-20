@@ -25,34 +25,71 @@
         <x-kpi-card label="My Deals" :value="$myDealsCount" color="purple"
             icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/>' />
 
-        <x-kpi-card label="Won This Month" :value="$wonThisMonth" color="emerald"
+        <x-kpi-card label="Total Customer" :value="$wonTotal . ' orang'" color="emerald"
             icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>' />
 
-        <x-kpi-card label="Target Tercapai" :value="$monthlyActual . '/' . $monthlyTarget . ' orang'" color="amber"
-            icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>' />
+        <x-kpi-card label="Total Revenue" :value="'Rp ' . number_format($revenueTotal, 0, ',', '.')" color="amber"
+            icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>' />
     </div>
 
     {{-- Target vs Actual + Pipeline Summary --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {{-- Target vs Actual --}}
-        <x-card>
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="font-serif text-lg font-semibold text-charcoal-900">Target Bulan Ini</h3>
-                <span class="text-xs font-mono text-charcoal-400 uppercase">{{ now()->format('F Y') }}</span>
+        <x-card class="flex flex-col justify-between h-full">
+            {{-- Bagian Revenue --}}
+            <div>
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="font-serif text-lg font-semibold text-emerald-700">Target Revenue Bulan Ini</h3>
+                    <span class="text-xs font-mono text-charcoal-400 uppercase bg-charcoal-50 px-2 py-1 rounded-md">{{ now()->format('F Y') }}</span>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <span class="block text-xs font-mono text-charcoal-400 uppercase mb-1">Tercapai</span>
+                            <strong class="text-2xl font-serif text-emerald-700">Rp {{ number_format($revenueActual, 0, ',', '.') }}</strong>
+                        </div>
+                        <div class="text-right">
+                            <span class="block text-xs font-mono text-charcoal-400 uppercase mb-1">Target</span>
+                            <strong class="text-base text-charcoal-900">Rp {{ number_format($revenueTarget, 0, ',', '.') }}</strong>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-sm font-medium text-charcoal-600">Progres Pencapaian</span>
+                            <span class="text-lg font-serif font-bold {{ $revenuePercentRaw >= 100 ? 'text-emerald-600' : 'text-blue-600' }}">{{ $revenuePercentRaw }}%</span>
+                        </div>
+                        <div class="w-full bg-charcoal-100 rounded-full h-3 overflow-hidden">
+                            <div class="h-3 rounded-full transition-all duration-1000 {{ $revenuePercent >= 100 ? 'bg-emerald-500' : ($revenuePercent >= 70 ? 'bg-blue-500' : ($revenuePercent >= 40 ? 'bg-amber-500' : 'bg-rose-500')) }}"
+                                 style="width: {{ $revenuePercent }}%"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="space-y-3">
-                <div class="flex justify-between text-sm">
-                    <span class="text-charcoal-600">Tercapai: <strong class="text-charcoal-900">{{ $monthlyActual }} orang</strong></span>
-                    <span class="text-charcoal-600">Target: <strong class="text-charcoal-900">{{ $monthlyTarget }} orang</strong></span>
+
+            <hr class="mt-auto mb-6 border-dashed border-charcoal-200">
+
+            {{-- Bagian Customer (Tanpa Target) --}}
+            <div class="bg-charcoal-50/50 rounded-2xl p-5 border border-charcoal-100/60 hover:bg-emerald-50/30 transition-colors">
+                <div class="flex items-center justify-between mb-1">
+                    <h3 class="font-serif text-base font-semibold text-charcoal-900">Customer Baru (Won)</h3>
+                    <span class="text-xs font-mono text-charcoal-400 uppercase">{{ now()->format('F Y') }}</span>
                 </div>
-                <div class="w-full bg-charcoal-100 rounded-full h-4 overflow-hidden">
-                    <div class="h-4 rounded-full transition-all duration-500 {{ $targetPercent >= 100 ? 'bg-emerald-500' : ($targetPercent >= 70 ? 'bg-blue-500' : ($targetPercent >= 40 ? 'bg-amber-500' : 'bg-rose-500')) }}"
-                         style="width: {{ $targetPercent }}%"></div>
-                </div>
-                <div class="text-center">
-                    <span class="text-2xl font-serif font-bold {{ $targetPercent >= 100 ? 'text-emerald-600' : 'text-blue-600' }}">{{ $targetPercent }}%</span>
-                    <p class="text-xs text-charcoal-400 mt-0.5">dari target tercapai</p>
+                <div class="flex items-center justify-between mt-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-sm text-charcoal-500 leading-tight">Total pelanggan yang<br>didapatkan bulan ini</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-3xl font-serif font-bold text-emerald-600">{{ $monthlyActual }}</span>
+                        <span class="text-sm font-medium text-charcoal-500 ml-1">orang</span>
+                    </div>
                 </div>
             </div>
         </x-card>
@@ -181,21 +218,22 @@
             @endif
         </x-card>
     </div>
+</div>
 
-    {{-- Recent Activities --}}
-    <x-card>
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="font-serif text-lg font-semibold text-charcoal-900">Aktivitas Terbaru</h3>
+{{-- Recent Activities --}}
+<x-card class="mt-8">
+    <div class="flex items-center justify-between mb-4">
+            <h3 class="font-serif text-lg font-semibold text-charcoal-900">Aktivitas Hari Ini</h3>
         </div>
         @if($recentActivities->isEmpty())
             <div class="text-center py-8">
                 <svg class="w-12 h-12 text-charcoal-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                <p class="text-sm text-charcoal-400">Belum ada aktivitas</p>
+                <p class="text-sm text-charcoal-400">Belum ada aktivitas hari ini</p>
             </div>
         @else
-            <div class="relative">
+            <div class="relative overflow-y-auto pr-2 custom-scrollbar" style="max-height: 500px;">
                 <div class="absolute left-4 top-0 bottom-0 w-px bg-charcoal-200"></div>
                 <div class="space-y-4">
                     @foreach($recentActivities as $activity)
@@ -206,13 +244,27 @@
                                     <x-badge :color="$activity->type_color" size="xs">{{ config("beauty-crm.activity_types.{$activity->type}", $activity->type) }}</x-badge>
                                     <span class="text-xs text-charcoal-400 font-mono">{{ $activity->activity_date ? $activity->activity_date->format('d M Y H:i') : $activity->created_at->format('d M Y H:i') }}</span>
                                 </div>
-                                <p class="text-sm font-medium text-charcoal-800">{{ $activity->subject ?: '-' }}</p>
+                                
+                                {{-- Activity Title (Smart Display) --}}
+                                @php
+                                    $activityTitle = $activity->subject;
+                                    if (!$activityTitle) {
+                                        if (in_array($activity->type, ['email', 'whatsapp'])) {
+                                            $activityTitle = 'Kirim ' . ucfirst($activity->type) . ' ke ' . ($activity->activitable->name ?? 'Pelanggan');
+                                        } else {
+                                            $activityTitle = 'Aktivitas ' . ucfirst($activity->type);
+                                        }
+                                    }
+                                @endphp
+                                <p class="text-sm font-medium text-charcoal-800">{{ $activityTitle }}</p>
+                                
                                 @if($activity->description)
                                     <p class="text-xs text-charcoal-500 mt-1 line-clamp-2">{{ $activity->description }}</p>
                                 @endif
-                                @if($activity->activitable)
+                                
+                                @if($activity->activitable && !in_array($activity->type, ['email', 'whatsapp']))
                                     <p class="text-xs text-blue-600 mt-1">
-                                        {{ class_basename($activity->activitable_type) }}: {{ $activity->activitable->name ?? '-' }}
+                                        Terkait: {{ $activity->activitable->name ?? '-' }}
                                     </p>
                                 @endif
                             </div>
@@ -222,8 +274,6 @@
             </div>
         @endif
     </x-card>
-
-</div>
 
 @push('scripts')
 <script>

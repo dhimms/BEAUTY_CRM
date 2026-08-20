@@ -89,14 +89,16 @@ class DealService
      * Dipanggil oleh: DealController@close (Tombol "Mark as Won")
      * Penjelasan: Mengubah status deal menjadi 'won', mencatat closed_at, dan otomatis membuatkan data Customer baru dari Lead.
      */
-    public function closeWon(Deal $deal): Deal
+    public function closeWon(Deal $deal, ?string $productName = null, ?float $value = null): Deal
     {
-        return DB::transaction(function () use ($deal) {
+        return DB::transaction(function () use ($deal, $productName, $value) {
 
             // Mengubah status Deal menjadi WON dan mencatat waktu Deal ditutup
             $deal->update([
-                'status'    => 'won',
-                'closed_at' => now(),
+                'status'       => 'won',
+                'closed_at'    => now(),
+                'product_name' => $productName,
+                'value'        => $value !== null ? $value : $deal->value,
             ]);
 
             // Mengambil Lead yang berhubungan dengan Deal
@@ -141,5 +143,42 @@ class DealService
         ]);
 
         return $deal;
+    }
+
+    /**
+     * Mengirim pesan blast ke Lead yang terhubung dengan Deal-deal yang dipilih.
+     */
+    public function blastMessage(array $dealIds, string $channel, string $message): int
+    {
+        $count = 0;
+        foreach ($dealIds as $id) {
+            $deal = Deal::with('lead')->find($id);
+            if (!$deal || !$deal->lead) continue;
+            
+            $lead = $deal->lead;
+
+            // Jika channel email, kirim email sungguhan
+            if ($channel === 'email' && !empty($lead->email)) {
+                try {
+                    \Illuminate\Support\Facades\Mail::to($lead->email)->send(new \App\Mail\BlastMessageMail($message));
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Gagal kirim blast email ke {$lead->email}: " . $e->getMessage());
+                }
+            }
+
+            // Catat ke dalam activity history untuk Lead tersebut
+            \App\Models\Activity::create([
+                'user_id' => auth()->id(),
+                'activitable_type' => \App\Models\Lead::class,
+                'activitable_id' => $lead->id,
+                'type' => $channel === 'whatsapp' ? 'whatsapp' : 'email',
+                'description' => "Kirim Blast via " . ucfirst($channel) . " (Terkait Deal: {$deal->name})",
+                'status' => 'completed',
+                'activity_date' => now(),
+                'notes' => $message
+            ]);
+            $count++;
+        }
+        return $count;
     }
 }

@@ -16,6 +16,8 @@
                 <tr class="bg-charcoal-50/50">
                     <th class="px-6 py-3 text-left font-mono font-medium text-charcoal-500 uppercase">Stage</th>
                     <th class="px-6 py-3 text-right font-mono font-medium text-charcoal-500 uppercase">Total Deals</th>
+                    <th class="px-6 py-3 text-right font-mono font-medium text-charcoal-500 uppercase">Max Potential (Rp)</th>
+                    <th class="px-6 py-3 text-right font-mono font-medium text-charcoal-500 uppercase">Projected Revenue (Rp)</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-charcoal-100">
@@ -24,8 +26,11 @@
                         <td class="px-6 py-4 font-medium text-charcoal-900">
                             <span class="w-3 h-3 rounded-full inline-block mr-2" style="background-color: {{ $stage['color'] }}"></span>
                             {{ $stage['name'] }}
+                            <span class="ml-2 text-xs text-charcoal-400">({{ $stage['probability'] }}% Win Rate)</span>
                         </td>
-                        <td class="px-6 py-4 text-right text-charcoal-600">{{ $stage['count'] }}</td>
+                        <td class="px-6 py-4 text-right text-charcoal-600 font-mono">{{ $stage['count'] }}</td>
+                        <td class="px-6 py-4 text-right text-charcoal-500 font-mono">{{ number_format($stage['total_value'], 0, ',', '.') }}</td>
+                        <td class="px-6 py-4 text-right text-emerald-600 font-medium font-mono">{{ number_format($stage['projected_revenue'], 0, ',', '.') }}</td>
                     </tr>
                 @endforeach
             </tbody>

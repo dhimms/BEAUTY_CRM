@@ -18,6 +18,7 @@ class Deal extends Model
     protected $fillable = [
         'lead_id',
         'name',
+        'product_name',
         'value',
         'pipeline_stage_id',
         'status',
@@ -116,8 +117,8 @@ class Deal extends Model
     public function getWeightedValueAttribute(): float
     {
         $probability = $this->pipelineStage?->probability ?? 0;
-        // Bobot untuk 1 calon member (1 Deal = 1 Orang)
-        return $probability / 100;
+        // Bobot proyeksi pendapatan (Deal Value * Probabilitas Stage)
+        return ($this->value * $probability) / 100;
     }
 
     // Mengubah format nilai rupiah (contoh: "Rp 5.000.000") untuk tampilan kartu deal

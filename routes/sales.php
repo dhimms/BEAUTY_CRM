@@ -31,6 +31,7 @@ Route::middleware(['role:Sales'])->prefix('sales')->name('sales.')->group(functi
     Route::put('/deals/{deal}', [DealController::class, 'update'])->name('deals.update'); // -> DealController@update | Modal/Form "Edit Deal" | Edit nilai, nama, tgl close deal
     Route::post('/deals/{deal}/move-stage', [DealController::class, 'moveStage'])->name('deals.move-stage'); // -> DealController@moveStage | Drag & Drop Kanban / "Pindah Stage" | Memindahkan stage deal (AJAX)
     Route::post('/deals/{deal}/close', [DealController::class, 'close'])->name('deals.close'); // -> DealController@close | Tombol "Mark as Won/Lost" | Tutup deal (Won -> otomatis buat Customer)
+    Route::post('/deals/blast', [DealController::class, 'blast'])->name('deals.blast'); // -> DealController@blast | Tombol "Blast Pesan" | Kirim pesan massal ke Leads
 
     // Activities
     Route::post('/activities', [ActivityController::class, 'store'])->name('activities.store'); // -> ActivityController@store | Form "Tambah Aktivitas" | Simpan log aktivitas & follow-up

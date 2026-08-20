@@ -107,6 +107,19 @@
                                         } elseif ($log->action === 'deleted' && is_array($log->old_values)) {
                                             $changedKeys = array_keys($log->old_values);
                                         }
+
+                                        // Menyaring kolom teknis agar tidak menuh-menuhin layar
+                                        $ignoredKeys = ['id', 'created_at', 'updated_at', 'deleted_at', 'remember_token', 'password'];
+                                        $changedKeys = array_filter($changedKeys, fn($key) => !in_array($key, $ignoredKeys));
+
+                                        // Menyaring agar hanya menampilkan kolom yang benar-benar berubah nilainya
+                                        if ($log->action === 'updated') {
+                                            $changedKeys = array_filter($changedKeys, function($key) use ($log) {
+                                                $old = $log->old_values[$key] ?? null;
+                                                $new = $log->new_values[$key] ?? null;
+                                                return $old !== $new;
+                                            });
+                                        }
                                     @endphp
 
                                     @foreach($changedKeys as $key)
@@ -147,7 +160,17 @@
                                         </div>
                                     @endforeach
                                     @if(empty($changedKeys))
-                                        <div class="text-center py-4 text-charcoal-400 text-sm">Tidak ada detail perubahan (atau format data tidak didukung).</div>
+                                        <div class="text-center py-4 text-charcoal-400 text-sm">
+                                            @if($log->action === 'created')
+                                                Data baru berhasil ditambahkan ke sistem.
+                                            @elseif($log->action === 'deleted')
+                                                Data telah dihapus secara permanen dari sistem.
+                                            @elseif($log->action === 'updated')
+                                                Pembaruan disimpan (hanya sinkronisasi sistem/waktu, tidak ada data inti yang berubah).
+                                            @else
+                                                Aktivitas tercatat oleh sistem.
+                                            @endif
+                                        </div>
                                     @endif
                                 </div>
                             </td>

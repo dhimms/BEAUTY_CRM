@@ -16,7 +16,7 @@
     @php
         $reports = [
             ['route' => 'manager.reports.sales-performance', 'title' => 'Sales Performance', 'desc' => 'Analisis performa setiap sales person', 'icon' => 'M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z', 'color' => 'amber'],
-            ['route' => 'manager.reports.revenue', 'title' => 'Member Acquisition', 'desc' => 'Tren penambahan member', 'icon' => 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z', 'color' => 'emerald'],
+            ['route' => 'manager.reports.revenue', 'title' => 'Revenue Trend', 'desc' => 'Tren pendapatan perusahaan', 'icon' => 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z', 'color' => 'emerald'],
             ['route' => 'manager.reports.lost-reasons', 'title' => 'Lost Reasons', 'desc' => 'Analisis alasan deal gagal', 'icon' => 'M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636', 'color' => 'rose'],
             ['route' => 'manager.reports.lead-sources', 'title' => 'Lead Sources', 'desc' => 'Performa sumber lead', 'icon' => 'M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1', 'color' => 'blue'],
             ['route' => 'manager.reports.pipeline-analysis', 'title' => 'Pipeline Analysis', 'desc' => 'Analisa tahapan pipeline', 'icon' => 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', 'color' => 'amber'],
@@ -47,7 +47,7 @@
             <label class="block text-sm font-medium text-charcoal-700 mb-1">Tipe Report</label>
             <select name="report_type" required class="px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-amber-500">
                 <option value="sales-performance">Sales Performance</option>
-                <option value="revenue">Member Acquisition</option>
+                <option value="revenue">Revenue Trend</option>
             </select>
         </div>
         <div>

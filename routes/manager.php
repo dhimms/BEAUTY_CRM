@@ -31,6 +31,7 @@ Route::middleware(['role:Manager'])->prefix('manager')->name('manager.')->group(
 
     // Forecast
     Route::get('/forecast', [\App\Http\Controllers\Manager\ForecastController::class, 'index'])->name('forecast.index');
+    Route::post('/forecast/targets', [\App\Http\Controllers\Manager\ForecastController::class, 'updateTargets'])->name('forecast.targets.update');
 
     // Audit Log (Manager can view)
     Route::get('/audit-logs', [\App\Http\Controllers\Manager\AuditLogController::class, 'index'])->name('audit-logs.index');

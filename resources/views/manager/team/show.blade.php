@@ -44,16 +44,16 @@
     {{-- Revenue Summary --}}
     <x-card>
         <div class="flex items-center justify-between mb-2">
-            <h3 class="font-serif text-lg font-semibold text-charcoal-900">Total Member Didapat</h3>
+            <h3 class="font-serif text-lg font-semibold text-charcoal-900">Total Pendapatan Dicapai</h3>
         </div>
-        <p class="text-3xl font-serif font-bold text-amber-700 mb-1">{{ $memberData['won'] }} <span class="text-lg font-medium text-amber-600">Member</span></p>
-        <p class="text-sm text-charcoal-500">Target Bulanan: <span class="font-medium text-charcoal-700">{{ $memberData['user']->monthly_target ?? 20 }} member</span></p>
+        <p class="text-3xl font-serif font-bold text-amber-700 mb-1">Rp {{ number_format($memberData['revenue_achieved'], 0, ',', '.') }}</p>
+        <p class="text-sm text-charcoal-500">Target Bulanan: <span class="font-medium text-charcoal-700">Rp {{ number_format($memberData['target'], 0, ',', '.') }}</span></p>
         <p class="text-sm text-charcoal-500 mt-1">Total aktivitas: <span class="font-medium text-charcoal-700">{{ $memberData['activities'] }}</span></p>
     </x-card>
 
     {{-- Monthly Revenue Chart --}}
     <x-card>
-        <h3 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Member Baru (6 Bulan)</h3>
+        <h3 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Tren Pendapatan (6 Bulan)</h3>
         <div style="height: 200px;"><canvas id="memberRevenueChart"></canvas></div>
     </x-card>
 </div>
@@ -100,23 +100,23 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const monthlyData = @json($memberData['monthly_won_count']);
+    const monthlyData = @json($memberData['monthly_revenue']);
     new Chart(document.getElementById('memberRevenueChart'), {
         type: 'bar',
         data: {
             labels: monthlyData.map(d => d.month),
             datasets: [{
-                label: 'Member',
-                data: monthlyData.map(d => d.count),
+                label: 'Pendapatan (Rp)',
+                data: monthlyData.map(d => d.revenue),
                 backgroundColor: '#D97706',
                 borderRadius: 8,
             }]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { return 'Rp ' + context.raw.toLocaleString('id-ID'); } } } },
             scales: {
-                y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#F3F4F6' } },
+                y: { beginAtZero: true, grid: { color: '#F3F4F6' } },
                 x: { grid: { display: false } }
             }
         }

@@ -19,53 +19,58 @@
 @endsection
 
 @section('content')
-<div class="space-y-6">
-
-    {{-- Filter Bar --}}
-    <x-card>
-        <form method="GET" action="{{ route('sales.deals.index') }}">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                    <label class="block text-xs font-mono text-charcoal-400 uppercase mb-1">Cari</label>
-                    <input type="text" name="search" value="{{ request('search') }}"
-                           placeholder="Nama deal atau lead..."
-                           class="w-full px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all">
-                </div>
-                <div>
-                    <label class="block text-xs font-mono text-charcoal-400 uppercase mb-1">Status</label>
-                    <select name="status" class="w-full px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 bg-white">
-                        <option value="">Semua Status</option>
-                        @foreach(config('beauty-crm.deal_statuses') as $key => $label)
-                            <option value="{{ $key }}" {{ request('status') === $key ? 'selected' : '' }}>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-mono text-charcoal-400 uppercase mb-1">Stage</label>
-                    <select name="stage" class="w-full px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 bg-white">
-                        <option value="">Semua Stage</option>
-                        @foreach($stages as $stage)
-                            <option value="{{ $stage->id }}" {{ request('stage') == $stage->id ? 'selected' : '' }}>{{ $stage->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="flex items-end gap-2">
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors">
-                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                        Cari
-                    </button>
-                    <a href="{{ route('sales.deals.index') }}" class="px-4 py-2 text-charcoal-600 text-sm font-medium hover:text-charcoal-800 transition-colors">Reset</a>
-                </div>
+<x-card :padding="false" x-data="{ 
+    selectedDeals: $persist([]), 
+    showBlastModal: false,
+    channel: 'whatsapp',
+    messageText: '',
+    toggleAll(e) {
+        if (e.target.checked) {
+            this.selectedDeals = Array.from(document.querySelectorAll('.deal-checkbox')).map(cb => cb.value);
+        } else {
+            this.selectedDeals = [];
+        }
+    }
+}">
+    {{-- Filters & Blast Button --}}
+    <div class="p-4 border-b border-charcoal-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <form method="GET" action="{{ route('sales.deals.index') }}" class="flex flex-wrap items-center gap-3">
+            <div class="flex-1 min-w-[200px]">
+                <input type="text" name="search" value="{{ request('search') }}"
+                       placeholder="Nama deal atau lead..."
+                       class="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all bg-white">
             </div>
+            
+            <select name="stage" class="px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300">
+                <option value="">Semua Stage</option>
+                @foreach($stages as $stage)
+                    <option value="{{ $stage->id }}" {{ request('stage') == $stage->id ? 'selected' : '' }}>{{ $stage->name }}</option>
+                @endforeach
+            </select>
+            
+            <button type="submit" class="px-4 py-2.5 bg-charcoal-800 text-white rounded-xl text-sm font-medium hover:bg-charcoal-900 transition-colors">
+                Filter
+            </button>
+            @if(request()->hasAny(['search', 'stage']))
+                <a href="{{ route('sales.deals.index') }}" class="px-4 py-2.5 text-charcoal-500 hover:text-charcoal-700 text-sm">Reset</a>
+            @endif
         </form>
-    </x-card>
+
+        <button x-show="selectedDeals.length > 0" x-cloak @click="showBlastModal = true"
+            class="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2 whitespace-nowrap">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            Blast Pesan (<span x-text="selectedDeals.length"></span>)
+        </button>
+    </div>
 
     {{-- Deals Table --}}
-    <x-card :padding="false">
-        <div class="overflow-x-auto">
+    <div class="overflow-x-auto">
             <table class="w-full text-sm" id="deals-table">
                 <thead>
                     <tr class="border-b border-charcoal-200 bg-charcoal-50/50">
+                        <th class="px-6 py-3 text-left w-12">
+                            <input type="checkbox" @change="toggleAll" class="rounded border-charcoal-300 text-blue-600 focus:ring-blue-500">
+                        </th>
                         <th class="text-left px-6 py-3 text-xs font-mono text-charcoal-400 uppercase tracking-wider">Deal</th>
                         <th class="text-left px-6 py-3 text-xs font-mono text-charcoal-400 uppercase tracking-wider hidden sm:table-cell">Lead</th>
                         <th class="text-left px-6 py-3 text-xs font-mono text-charcoal-400 uppercase tracking-wider hidden md:table-cell">Stage</th>
@@ -77,6 +82,9 @@
                 <tbody class="divide-y divide-charcoal-100">
                     @forelse($deals as $deal)
                         <tr class="hover:bg-blue-50/30 transition-colors">
+                            <td class="px-6 py-4">
+                                <input type="checkbox" value="{{ $deal->id }}" x-model="selectedDeals" class="deal-checkbox rounded border-charcoal-300 text-blue-600 focus:ring-blue-500">
+                            </td>
                             <td class="px-6 py-4">
                                 <a href="{{ route('sales.deals.show', $deal) }}" class="text-charcoal-800 font-medium hover:text-blue-600 transition-colors">
                                     {{ $deal->name }}
@@ -111,7 +119,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-12 text-center">
+                            <td colspan="7" class="px-6 py-12 text-center">
                                 <svg class="w-12 h-12 text-charcoal-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/>
                                 </svg>
@@ -121,12 +129,56 @@
                     @endforelse
                 </tbody>
             </table>
+    </div>
+    
+    @if($deals->hasPages())
+        <div class="px-6 py-4 border-t border-charcoal-100">
+            {{ $deals->links() }}
         </div>
-        @if($deals->hasPages())
-            <div class="px-6 py-4 border-t border-charcoal-100">
-                {{ $deals->links() }}
+    @endif
+
+    {{-- Blast Message Modal --}}
+    <div x-show="showBlastModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="showBlastModal" x-transition.opacity class="fixed inset-0 bg-charcoal-900/50 backdrop-blur-sm transition-opacity" @click="showBlastModal = false"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div x-show="showBlastModal" x-transition class="relative z-10 inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" @click.stop>
+                <form method="POST" action="{{ route('sales.deals.blast') }}" @submit="setTimeout(() => { selectedDeals = [] }, 100)">
+                    @csrf
+                    <template x-for="id in selectedDeals">
+                        <input type="hidden" name="deal_ids[]" :value="id">
+                    </template>
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="mb-4">
+                            <h3 class="text-lg leading-6 font-serif font-semibold text-charcoal-900" id="modal-title">Kirim Blast Pesan</h3>
+                            <p class="text-sm text-charcoal-500 mt-1">Pesan akan dikirimkan ke <span class="font-bold text-blue-600" x-text="selectedDeals.length"></span> lead.</p>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-charcoal-700 mb-1">Jalur Pengiriman</label>
+                                <select name="channel" x-model="channel" class="w-full px-4 py-2 border border-charcoal-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white">
+                                    <option value="whatsapp">WhatsApp</option>
+                                    <option value="email">Email</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-charcoal-700 mb-1">Isi Pesan</label>
+                                <textarea name="message" x-model="messageText" rows="4" required placeholder="Ketik pesan Anda di sini..."
+                                    class="w-full px-4 py-3 border border-charcoal-200 rounded-xl focus:ring-2 focus:ring-blue-500"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-charcoal-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-charcoal-100">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm transition-colors">
+                            Kirim Pesan
+                        </button>
+                        <button type="button" @click="showBlastModal = false" class="mt-3 w-full inline-flex justify-center rounded-xl border border-charcoal-200 shadow-sm px-4 py-2 bg-white text-base font-medium text-charcoal-700 hover:bg-charcoal-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-colors">
+                            Batal
+                        </button>
+                    </div>
+                </form>
             </div>
-        @endif
-    </x-card>
-</div>
+        </div>
+    </div>
+</x-card>
 @endsection

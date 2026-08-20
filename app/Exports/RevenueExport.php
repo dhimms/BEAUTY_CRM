@@ -18,7 +18,7 @@ class RevenueExport implements FromArray, WithHeadings, WithStyles, WithTitle
 
     public function __construct(ReportService $reportService)
     {
-        $this->data = $reportService->getMemberAcquisitionReport(12);
+        $this->data = $reportService->getRevenueReport(12);
     }
 
     // 1. KONTRAK ISI DATA (FromArray)
@@ -28,7 +28,7 @@ class RevenueExport implements FromArray, WithHeadings, WithStyles, WithTitle
         return array_map(function ($month) {
             return [
                 $month['month'],
-                $month['deals_count'],
+                $month['revenue'],
             ];
         }, $this->data['monthly']);
     }
@@ -39,7 +39,7 @@ class RevenueExport implements FromArray, WithHeadings, WithStyles, WithTitle
     {
         return [
             'Bulan',
-            'Member Baru',
+            'Pendapatan (Rp)',
         ];
     }
 
@@ -54,6 +54,6 @@ class RevenueExport implements FromArray, WithHeadings, WithStyles, WithTitle
 
     public function title(): string
     {
-        return 'Member Acquisition Report';
+        return 'Revenue Trend Report';
     }
 }
