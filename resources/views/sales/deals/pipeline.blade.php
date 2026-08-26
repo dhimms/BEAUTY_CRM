@@ -32,7 +32,7 @@
                     <div class="flex items-center gap-2">
                         <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: {{ $stage->color }}"></div>
                         <h3 class="text-sm font-semibold text-charcoal-800">{{ $stage->name }}</h3>
-                        <span class="inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold text-charcoal-500 bg-charcoal-100 rounded-full">{{ $stageDeals->count() }}</span>
+                        <span class="stage-count-badge inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold text-charcoal-500 bg-charcoal-100 rounded-full">{{ $stageDeals->count() }}</span>
                     </div>
                     <span class="text-xs font-mono text-charcoal-400">{{ $stage->probability }}%</span>
                 </div>
@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateColumnStats(column) {
         if (!column) return;
         const cards = column.querySelectorAll('.kanban-card');
-        const countBadge = column.previousElementSibling?.querySelector('.rounded-full');
+        const countBadge = column.previousElementSibling?.querySelector('.stage-count-badge');
         const emptyPlaceholder = column.querySelector('.empty-placeholder');
         const footerTotal = column.nextElementSibling?.querySelector('span.font-semibold');
 
