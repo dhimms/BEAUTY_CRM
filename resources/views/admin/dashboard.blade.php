@@ -95,6 +95,65 @@ Overview of BeautyCRM performance — {{ now()->translatedFormat("F Y") }}
         </div>
     </div>
 
+    {{-- Widget Target Revenue Manager vs Realisasi (Sederhana - Opsi 2) --}}
+    <div class="bg-white rounded-xl border border-charcoal-200 shadow-sm p-5 space-y-4">
+        {{-- Header & Stats Row --}}
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-charcoal-100">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100/80 flex-shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                </div>
+                <div>
+                    <h3 class="font-serif text-base lg:text-lg font-bold text-charcoal-900">Target Revenue Penjualan</h3>
+                    <p class="text-xs text-charcoal-500">Realisasi Omset Won vs Target Manager Bulan Ini</p>
+                </div>
+            </div>
+
+            {{-- Stat Summary inline strip --}}
+            <div class="flex flex-wrap items-center gap-4 sm:gap-6 text-sm">
+                <div>
+                    <span class="block text-[10px] font-mono uppercase tracking-wider text-charcoal-400">Target Per Sales</span>
+                    <span class="font-serif font-bold text-charcoal-800 text-base lg:text-lg">Rp {{ number_format($targetSummary['target_per_sales'], 0, ',', '.') }}</span>
+                </div>
+                <div class="hidden sm:block h-8 w-px bg-charcoal-200"></div>
+                <div>
+                    <span class="block text-[10px] font-mono uppercase tracking-wider text-charcoal-400">Total Target Tim</span>
+                    <span class="font-serif font-bold text-charcoal-800 text-base lg:text-lg">Rp {{ number_format($targetSummary['total_target'], 0, ',', '.') }}</span>
+                    <span class="text-[10px] text-charcoal-400 font-medium">({{ $targetSummary['sales_count'] }} Sales)</span>
+                </div>
+                <div class="hidden sm:block h-8 w-px bg-charcoal-200"></div>
+                <div>
+                    <span class="block text-[10px] font-mono uppercase tracking-wider text-charcoal-400">Realisasi (Won)</span>
+                    <span class="font-serif font-bold text-emerald-600 text-base lg:text-lg">Rp {{ number_format($targetSummary['total_achieved'], 0, ',', '.') }}</span>
+                </div>
+                <div class="hidden sm:block h-8 w-px bg-charcoal-200"></div>
+                <div>
+                    <span class="block text-[10px] font-mono uppercase tracking-wider text-charcoal-400">Sisa Target</span>
+                    <span class="font-serif font-bold text-base lg:text-lg {{ $targetSummary['remaining'] == 0 ? 'text-emerald-600' : 'text-amber-600' }}">
+                        @if($targetSummary['remaining'] > 0)
+                            Rp {{ number_format($targetSummary['remaining'], 0, ',', '.') }}
+                        @else
+                            Rp 0 <span class="text-xs font-sans font-medium text-emerald-600">(Tercapai)</span>
+                        @endif
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        {{-- Progress Bar Streamlined --}}
+        <div>
+            <div class="flex justify-between items-center mb-1.5 text-xs">
+                <span class="font-medium text-charcoal-600">Pencapaian Target Tim ({{ $targetSummary['sales_count'] }} Sales Aktif)</span>
+                <span class="font-mono font-bold px-2.5 py-0.5 rounded-full text-[11px] {{ $targetSummary['percentage'] >= 100 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-blue-100 text-blue-800 border border-blue-200' }}">
+                    {{ $targetSummary['percentage'] }}% Total Achieved
+                </span>
+            </div>
+            <div class="h-2.5 w-full bg-charcoal-100 rounded-full overflow-hidden flex">
+                <div class="h-full {{ $targetSummary['percentage'] >= 100 ? 'bg-emerald-500' : 'bg-blue-600' }} rounded-full transition-all duration-500" style="width: {{ $targetSummary['percentage_capped'] }}%"></div>
+            </div>
+        </div>
+    </div>
+
     {{-- Charts Row 1: Lead Trend + Leads by Source --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <x-card class="lg:col-span-2">
@@ -167,7 +226,7 @@ Overview of BeautyCRM performance — {{ now()->translatedFormat("F Y") }}
                             <th class="px-4 py-3 font-medium">#</th>
                             <th class="px-4 py-3 font-medium">Sales Rep</th>
                             <th class="px-4 py-3 font-medium text-center">Won</th>
-                            <th class="px-4 py-3 font-medium text-center">Target Bulanan</th>
+                            <th class="px-4 py-3 font-medium text-right">Realisasi / Target Rp</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-charcoal-100">
@@ -186,7 +245,19 @@ Overview of BeautyCRM performance — {{ now()->translatedFormat("F Y") }}
                                     </div>
                                 </td>
                                 <td class="px-4 py-3 text-center font-semibold text-emerald-600">{{ $sales->won_this_month }}</td>
-                                <td class="px-4 py-3 text-center text-charcoal-700 font-mono text-xs">{{ $sales->monthly_target ?? 20 }}</td>
+                                <td class="px-4 py-3 text-right">
+                                    @php
+                                        $achieved = $sales->revenue_achieved ?? 0;
+                                        $target = $sales->revenue_target ?? 0;
+                                        $pct = $target > 0 ? round(($achieved / $target) * 100, 1) : ($achieved > 0 ? 100 : 0);
+                                    @endphp
+                                    <div class="text-xs font-semibold text-charcoal-900">
+                                        Rp {{ number_format($achieved, 0, ',', '.') }}
+                                    </div>
+                                    <div class="text-[10px] text-charcoal-500 font-mono mt-0.5">
+                                        Target: Rp {{ number_format($target, 0, ',', '.') }} ({{ $pct }}%)
+                                    </div>
+                                </td>
                             </tr>
                         @empty
                             <tr>

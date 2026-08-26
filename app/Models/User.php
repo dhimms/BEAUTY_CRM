@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 // Spatie adalah  package yang digunakan untuk membedakan role user 
 use Spatie\Permission\Traits\HasRoles;
 
@@ -94,7 +95,7 @@ class User extends Authenticatable
     public function getAvatarUrlAttribute(): string
     {
         if ($this->avatar) {
-            return asset('storage/' . $this->avatar);
+            return Storage::url($this->avatar);
         }
         return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&color=F43F5E&background=FEE2E2';
     }

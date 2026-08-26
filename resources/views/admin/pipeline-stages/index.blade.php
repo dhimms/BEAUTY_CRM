@@ -14,37 +14,40 @@
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="sortable-stages">
-    @forelse($stages as $stage)
-        <div data-id="{{ $stage->id }}" class="bg-white rounded-xl border border-charcoal-200 shadow-sm overflow-hidden flex flex-col group cursor-move">
-            <div class="h-2 w-full" style="background-color: {{ $stage->color ?? '#F43F5E' }}"></div>
-            <div class="p-5 flex-1">
-                <div class="flex justify-between items-start mb-2">
-                    <h3 class="font-serif font-bold text-lg text-charcoal-900">{{ $stage->name }}</h3>
-                    <span class="text-xs font-mono font-medium px-2 py-1 rounded bg-charcoal-50 text-charcoal-600">{{ $stage->probability }}% Win</span>
-                </div>
-                <div class="flex items-center gap-2 mt-4 text-sm text-charcoal-500 font-medium">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>
-                    {{ $stage->deals_count }} Deals
-                </div>
+   @forelse($stages as $stage)
+    <div data-id="{{ $stage->id }}" class="bg-white rounded-xl border border-charcoal-200 shadow-sm overflow-hidden flex flex-col group cursor-move">
+        <div class="h-2 w-full" style="background-color: {{ $stage->color ?? '#F43F5E' }}"></div>
+        <div class="p-5 flex-1">
+            <div class="flex justify-between items-start mb-2">
+                <h3 class="font-serif font-bold text-lg text-charcoal-900">{{ $stage->name }}</h3>
+                <span class="text-xs font-mono font-medium px-2 py-1 rounded bg-charcoal-50 text-charcoal-600">{{ $stage->probability }}% Win</span>
             </div>
-            <div class="bg-charcoal-50 px-5 py-3 border-t border-charcoal-100 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <svg class="w-5 h-5 text-charcoal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-                <div class="flex gap-3">
-                    <a href="{{ route('admin.pipeline-stages.edit', $stage) }}" class="text-sm font-medium text-amber-600 hover:text-amber-800">Edit</a>
-                    <form action="{{ route('admin.pipeline-stages.destroy', $stage) }}" method="POST" class="inline" onsubmit="return confirm('Delete this pipeline stage?');">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="text-sm font-medium text-rose-600 hover:text-rose-800">Delete</button>
-                    </form>
-                </div>
+            <div class="flex items-center gap-2 mt-4 text-sm text-charcoal-500 font-medium">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>
+                {{ $stage->deals_count }} Deals
             </div>
         </div>
-    @empty
-        <div class="col-span-full py-12 text-center text-charcoal-500">
-            <h3 class="text-lg font-medium text-charcoal-900">No pipeline stages found</h3>
-            <p class="mt-1">Add your first stage to start tracking deals.</p>
+        <div class="bg-charcoal-50 px-5 py-3 border-t border-charcoal-100 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <svg class="w-5 h-5 text-charcoal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+            <div class="flex gap-3">
+                <!-- Perbaikan pada parameter route edit -->
+                <a href="{{ route('admin.pipeline-stages.edit', $stage->id) }}" class="text-sm font-medium text-amber-600 hover:text-amber-800">Edit</a>
+                
+                <!-- Perbaikan pada parameter route destroy -->
+                <form action="{{ route('admin.pipeline-stages.destroy', $stage->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this pipeline stage?');">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="text-sm font-medium text-rose-600 hover:text-rose-800">Delete</button>
+                </form>
+            </div>
         </div>
-    @endforelse
+    </div>
+@empty
+    <div class="col-span-full py-12 text-center text-charcoal-500">
+        <h3 class="text-lg font-medium text-charcoal-900">No pipeline stages found</h3>
+        <p class="mt-1">Add your first stage to start tracking deals.</p>
+    </div>
+@endforelse
 </div>
 @endsection
 

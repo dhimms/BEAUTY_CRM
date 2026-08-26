@@ -135,25 +135,69 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
+        // ─── Target Pendapatan Manager vs Realisasi ────────────
+        $salesUsers = User::role('Sales')->where('is_active', true)->get();
+        $totalTargetRevenue = $salesUsers->sum('revenue_target');
+        $targetPerSales = $salesUsers->first()?->revenue_target ?? 0;
+        $totalRevenueAchieved = Deal::won()
+            ->whereYear('closed_at', $now->year)
+            ->whereMonth('closed_at', $now->month)
+            ->sum('value');
+        $targetProgressPercent = $totalTargetRevenue > 0
+            ? round(($totalRevenueAchieved / $totalTargetRevenue) * 100, 1)
+            : ($totalRevenueAchieved > 0 ? 100 : 0);
+
+        $salesBreakdown = $salesUsers->map(function ($user) use ($now) {
+            $achieved = Deal::where('assigned_to', $user->id)
+                ->won()
+                ->whereYear('closed_at', $now->year)
+                ->whereMonth('closed_at', $now->month)
+                ->sum('value');
+            $target = $user->revenue_target ?? 0;
+            $pct = $target > 0 ? round(($achieved / $target) * 100, 1) : ($achieved > 0 ? 100 : 0);
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'avatar_url' => $user->avatar_url,
+                'target' => $target,
+                'achieved' => $achieved,
+                'percentage' => $pct,
+                'percentage_capped' => min(100, $pct),
+            ];
+        })->sortByDesc('achieved')->values();
+
+        $targetSummary = [
+            'target_per_sales' => $targetPerSales,
+            'sales_count' => $salesUsers->count(),
+            'total_target' => $totalTargetRevenue,
+            'total_achieved' => $totalRevenueAchieved,
+            'remaining' => max(0, $totalTargetRevenue - $totalRevenueAchieved),
+            'percentage' => $targetProgressPercent,
+            'percentage_capped' => min(100, $targetProgressPercent),
+            'sales_breakdown' => $salesBreakdown,
+        ];
+
         // ─── Top Sales (won deals bulan ini) ──────────────────
         // mengambil data user yang memiliki role 'Sales'
         $topSales = User::role('Sales')
-        // menghitung ada berapa banyak transaksi (assignedDeals) milik Sales ini
-        // berdasarkan status won dan bulan dan tahun
+            // menghitung ada berapa banyak transaksi (assignedDeals) milik Sales ini
             ->withCount(['assignedDeals as won_this_month' => fn($q) => $q
                 ->won()
                 ->whereMonth('closed_at', $now->month)
                 ->whereYear('closed_at', $now->year)
             ])
-            // [FITUR BARU] Perhitungan total revenue (withSum) telah dihapus dari tabel Top Sales ini, karena kita hanya menampilkan jumlah won deals.
-            // orderByDesc('won_this_month') adalah method yang digunakan untuk mengurutkan data berdasarkan won_this_month
-            // method ini 'won_this_month' sudah kita buat di model
+            ->withSum(['assignedDeals as revenue_achieved' => fn($q) => $q
+                ->won()
+                ->whereMonth('closed_at', $now->month)
+                ->whereYear('closed_at', $now->year)
+            ], 'value')
             ->orderByDesc('won_this_month')
             ->limit(5) 
             ->get();
 
         return view('admin.dashboard', compact(
             'kpi',
+            'targetSummary',
             'leadTrend',
             'leadsBySource',
             'pipelineSummary',

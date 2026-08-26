@@ -28,13 +28,18 @@ class ProfileController extends Controller
         ]);
 
         if ($request->hasFile('avatar')) {
+            $defaultDisk = config('filesystems.default');
             // Delete old avatar if exists
-            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
-                Storage::disk('public')->delete($user->avatar);
+            if ($user->avatar) {
+                if (Storage::disk($defaultDisk)->exists($user->avatar)) {
+                    Storage::disk($defaultDisk)->delete($user->avatar);
+                } elseif (Storage::disk('public')->exists($user->avatar)) {
+                    Storage::disk('public')->delete($user->avatar);
+                }
             }
 
-            // Store new avatar
-            $path = $request->file('avatar')->store('avatars', 'public');
+            // Store new avatar using default filesystem disk (MinIO / S3)
+            $path = $request->file('avatar')->store('avatars');
             $user->avatar = $path;
         }
 

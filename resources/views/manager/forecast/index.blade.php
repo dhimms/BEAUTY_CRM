@@ -84,29 +84,45 @@
     <div class="grid grid-cols-1 gap-6">
         <x-card :padding="false">
             <div class="p-6 border-b border-charcoal-100 flex justify-between items-center">
-                <h3 class="font-serif text-lg font-semibold text-charcoal-900">Performa Pencapaian Target Sales (Bulan Ini)</h3>
+                <div>
+                    <h3 class="font-serif text-lg font-bold text-charcoal-900">Performa Pencapaian Target Sales (Bulan Ini)</h3>
+                    <p class="text-xs text-charcoal-500 mt-0.5">Monitoring perbandingan realisasi omset won terhadap target individual sales</p>
+                </div>
             </div>
             <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 @foreach($revenueData['sales_performance'] as $sp)
-                    <div class="flex items-start gap-4 p-4 border border-charcoal-100 rounded-xl bg-charcoal-50/30">
-                        <img src="{{ $sp['avatar_url'] }}" alt="Avatar" class="w-12 h-12 rounded-full border border-charcoal-200">
-                        <div class="flex-1 min-w-0">
-                            <h4 class="text-sm font-bold text-charcoal-900 mb-1">{{ $sp['name'] }}</h4>
-                            <div class="flex justify-between items-end mb-2">
-                                <div>
-                                    <p class="text-sm font-bold {{ $sp['revenue_achieved'] >= $sp['revenue_target'] && $sp['revenue_target'] > 0 ? 'text-emerald-600' : 'text-charcoal-900' }}">
-                                        Rp {{ number_format($sp['revenue_achieved'], 0, ',', '.') }}
-                                    </p>
-                                    <p class="text-[10px] text-charcoal-400 uppercase tracking-wider mt-0.5">TARGET: Rp {{ number_format($sp['revenue_target'], 0, ',', '.') }}</p>
+                    <div class="p-4 border border-charcoal-200 rounded-xl bg-white hover:bg-charcoal-50/40 transition-all shadow-2xs flex flex-col justify-between space-y-3">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <img src="{{ $sp['avatar_url'] }}" alt="{{ $sp['name'] }}" class="w-10 h-10 rounded-full object-cover border border-charcoal-200 shadow-2xs flex-shrink-0">
+                                <div class="min-w-0">
+                                    <h4 class="text-xs font-bold text-charcoal-900 truncate">{{ $sp['name'] }}</h4>
+                                    <span class="text-[10px] text-charcoal-500 font-mono">{{ $sp['members_won_this_month'] }} Deals Won</span>
                                 </div>
                             </div>
-                            {{-- Progress Bar --}}
-                            <div class="h-2 w-full bg-charcoal-200 rounded-full overflow-hidden flex">
-                                <div class="h-full {{ $sp['progress_raw'] >= 100 ? 'bg-emerald-500' : 'bg-blue-500' }} transition-all duration-500" style="width: {{ $sp['progress_percentage'] }}%"></div>
+                            <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-full flex-shrink-0 {{ $sp['progress_raw'] >= 100 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-blue-100 text-blue-800 border border-blue-200' }}">
+                                {{ $sp['progress_raw'] }}%
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-charcoal-100 text-xs">
+                            <div>
+                                <span class="text-[10px] font-mono text-charcoal-400 uppercase tracking-wider block">Realisasi</span>
+                                <span class="font-mono font-bold text-emerald-600 block text-xs">
+                                    Rp {{ number_format($sp['revenue_achieved'], 0, ',', '.') }}
+                                </span>
                             </div>
-                            <div class="mt-1 flex justify-between items-center">
-                                <span class="text-[10px] text-charcoal-500">{{ $sp['members_won_this_month'] }} Deals Won</span>
-                                <span class="text-[10px] font-mono font-medium {{ $sp['progress_raw'] >= 100 ? 'text-emerald-600' : 'text-charcoal-500' }}">{{ $sp['progress_raw'] }}% Tercapai</span>
+                            <div class="text-right">
+                                <span class="text-[10px] font-mono text-charcoal-400 uppercase tracking-wider block">Target</span>
+                                <span class="font-mono font-semibold text-charcoal-700 block text-xs">
+                                    Rp {{ number_format($sp['revenue_target'], 0, ',', '.') }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="h-2 w-full bg-charcoal-100 rounded-full overflow-hidden flex">
+                                <div class="h-full {{ $sp['progress_raw'] >= 100 ? 'bg-emerald-500' : 'bg-blue-600' }} rounded-full" style="width: {{ $sp['progress_percentage'] }}%"></div>
                             </div>
                         </div>
                     </div>

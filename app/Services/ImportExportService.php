@@ -11,27 +11,47 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 class ImportExportService
 {
     /**
-     * Import leads from uploaded Excel/CSV file.
+     * Import leads from uploaded Excel/CSV file and save file copy in MinIO storage.
      */
     public function importLeads(UploadedFile $file): array
     {
+        $disk = config('filesystems.default');
+
+        // Simpan file yang di-upload ke MinIO (misal di folder imports/leads/)
+        $storedPath = $file->store('imports/leads', $disk);
+
         $import = new LeadImport();
-        Excel::import($import, $file);
+        // Impor data langsung dari file yang tersimpan di MinIO
+        Excel::import($import, $storedPath, $disk);
 
         $failures = $import->failures();
         return [
             'failures' => $failures,
             'failure_count' => count($failures),
+            'stored_path' => $storedPath,
         ];
     } 
 
     /**
-     * Export leads with optional filters.
+     * Export leads with optional filters (Direct Download to Browser).
      */
     public function exportLeads(array $filters = []): BinaryFileResponse
     {
         $filename = 'leads_export_' . now()->format('Ymd_His') . '.xlsx';
         return Excel::download(new LeadExport($filters), $filename);
+    }
+
+    /**
+     * Export leads and save an archived copy directly to MinIO storage.
+     */
+    public function exportAndStoreLeads(array $filters = []): string
+    {
+        $disk = config('filesystems.default');
+        $filename = 'exports/leads/leads_export_' . now()->format('Ymd_His') . '.xlsx';
+        
+        Excel::store(new LeadExport($filters), $filename, $disk);
+
+        return $filename;
     }
 
     /**

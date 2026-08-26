@@ -6,14 +6,28 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\PipelineStageRequest;
 use App\Models\PipelineStage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB; // Pastikan untuk meng-import DB Facade di bagian atas file
 
 class PipelineStageController extends Controller
 {
-    public function index()
-    {
-        $stages = PipelineStage::withCount('deals')->ordered()->get();
-        return view('admin.pipeline-stages.index', compact('stages'));
-    }
+   
+public function index()
+{  
+    $stages = DB::select("
+    
+        SELECT 
+            `pipeline_stages`.*, 
+            (SELECT COUNT(*) FROM `deals` WHERE `deals`.`pipeline_stage_id` = `pipeline_stages`.`id`) AS `deals_count`
+        FROM 
+            `pipeline_stages`
+        ORDER BY 
+            `order` ASC
+            
+    ");
+
+        // dd($stages);
+    return view('admin.pipeline-stages.index', compact('stages'));
+} 
 
     public function create()
     {
