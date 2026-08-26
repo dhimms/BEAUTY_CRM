@@ -17,6 +17,14 @@ class LeadImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFail
 {
     use SkipsFailures;
 
+    public function prepareForValidation($data, $index)
+    {
+        if (isset($data['phone'])) {
+            $data['phone'] = (string) $data['phone'];
+        }
+        return $data;
+    }
+
     public function model(array $row): ?Lead
     {
         $source = LeadSource::where('name', $row['lead_source'] ?? '')->first();
@@ -24,7 +32,7 @@ class LeadImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFail
         return new Lead([
             'name'           => $row['name'],
             'email'          => $row['email'] ?? null,
-            'phone'          => $row['phone'],
+            'phone'          => (string) $row['phone'],
             'address'        => $row['address'] ?? null,
             'lead_source_id' => $source?->id ?? LeadSource::first()?->id,
             'notes'          => $row['notes'] ?? null,
