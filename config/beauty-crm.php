@@ -2,7 +2,11 @@
 
 return [
     'version' => env('BEAUTY_CRM_VERSION', '1.0.0'),
-    'company_name' => env('BEAUTY_CRM_COMPANY', 'Beauty Studio'),
+    'company_name' => env('COMPANY_NAME', 'Beauty Studio'),
+    
+    // Notification Settings
+    'notify_new_lead' => env('NOTIFY_NEW_LEAD', true),
+    'notify_won_deal' => env('NOTIFY_WON_DEAL', true),
 
     'lead_statuses' => [
         'new' => 'New',

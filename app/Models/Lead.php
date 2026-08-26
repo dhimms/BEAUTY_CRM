@@ -68,6 +68,12 @@ class Lead extends Model
         return $this->morphMany(Activity::class, 'activitable');
     }
 
+    // Relasi untuk mendapatkan aktivitas terakhir dari lead ini
+    public function latestActivity()
+    {
+        return $this->morphOne(Activity::class, 'activitable')->latestOfMany('activity_date');
+    }
+
     // Relasi ke tabel Customer (jika deal won, lead jadi customer)
     public function customer()
     {

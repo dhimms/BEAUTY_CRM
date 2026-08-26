@@ -114,12 +114,27 @@ class CustomerService
             $customer = Customer::find($id);
             if (!$customer) continue;
 
-            // Jika channel email, kirim email sungguhan
             if ($channel === 'email' && !empty($customer->email)) {
                 try {
                     \Illuminate\Support\Facades\Mail::to($customer->email)->send(new \App\Mail\BlastMessageMail($message));
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error("Gagal kirim blast email ke {$customer->email}: " . $e->getMessage());
+                }
+            } elseif ($channel === 'whatsapp' && !empty($customer->phone)) {
+                try {
+                    $token = env('FONNTE_TOKEN');
+                    if ($token) {
+                        \Illuminate\Support\Facades\Http::withHeaders([
+                            'Authorization' => $token
+                        ])->post('https://api.fonnte.com/send', [
+                            'target' => $customer->phone,
+                            'message' => $message,
+                        ]);
+                    } else {
+                        \Illuminate\Support\Facades\Log::warning("Fonnte Token is missing, cannot send WA blast to {$customer->phone}");
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Gagal kirim blast WA ke {$customer->phone}: " . $e->getMessage());
                 }
             }
 

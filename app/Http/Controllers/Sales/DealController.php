@@ -57,7 +57,7 @@ class DealController extends Controller
                       ->orWhereHas('lead', fn($q) => $q->where('name', 'like', "%{$search}%"));
                 });
             })
-            ->with(['lead', 'pipelineStage', 'assignedUser'])
+            ->with(['lead.latestActivity', 'pipelineStage', 'assignedUser'])
             ->latest()
             ->paginate(15)
             ->withQueryString();
@@ -196,8 +196,10 @@ class DealController extends Controller
             $this->dealService->closeWon($deal, $request->product_name, $request->value);
 
             $deal->load('assignedUser');
-            $managersAndAdmins = User::role(['Admin', 'Manager'])->get();
-            Notification::send($managersAndAdmins, new DealWonNotification($deal));
+            if (config('beauty-crm.notify_won_deal')) {
+                $admins = User::role('Admin')->get();
+                Notification::send($admins, new DealWonNotification($deal));
+            }
 
             return redirect()->route('sales.deals.show', $deal)
                 ->with('success', 'Deal ditandai sebagai WON! Customer baru telah dibuat.');

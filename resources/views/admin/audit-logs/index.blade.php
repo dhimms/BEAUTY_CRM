@@ -37,21 +37,34 @@
 </x-card>
 
 <x-card padding="false">
+    <div class="border-b border-charcoal-200">
+        <nav class="flex -mb-px" aria-label="Tabs">
+            <a href="{{ route('admin.audit-logs.index', ['tab' => 'system']) }}" class="w-1/2 py-4 px-1 text-center border-b-2 font-medium text-sm {{ $tab === 'system' ? 'border-rose-500 text-rose-600' : 'border-transparent text-charcoal-500 hover:text-charcoal-700 hover:border-charcoal-300' }}">
+                System CRUD Logs
+            </a>
+            <a href="{{ route('admin.audit-logs.index', ['tab' => 'activities']) }}" class="w-1/2 py-4 px-1 text-center border-b-2 font-medium text-sm {{ $tab === 'activities' ? 'border-rose-500 text-rose-600' : 'border-transparent text-charcoal-500 hover:text-charcoal-700 hover:border-charcoal-300' }}">
+                User Activities & Blast Logs
+            </a>
+        </nav>
+    </div>
+    
     <div class="overflow-x-auto">
         <table class="w-full text-sm text-left">
             <thead class="text-xs text-charcoal-500 uppercase bg-charcoal-50 border-b border-charcoal-200">
                 <tr>
                     <th class="px-6 py-4 font-medium">User</th>
-                    <th class="px-6 py-4 font-medium">Action</th>
-                    <th class="px-6 py-4 font-medium">Module / ID</th>
+                    <th class="px-6 py-4 font-medium">{{ $tab === 'activities' ? 'Type' : 'Action' }}</th>
+                    <th class="px-6 py-4 font-medium">{{ $tab === 'activities' ? 'Target Customer / Lead' : 'Module / ID' }}</th>
                     <th class="px-6 py-4 font-medium">Description</th>
-                    <th class="px-6 py-4 font-medium">IP Address</th>
+                    @if($tab === 'system')
+                        <th class="px-6 py-4 font-medium">IP Address</th>
+                    @endif
                     <th class="px-6 py-4 font-medium">Timestamp</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-charcoal-100" x-data="{ expanded: null }">
                 @forelse($logs as $log)
-                    <tr class="hover:bg-charcoal-50 cursor-pointer" @click="expanded = expanded === {{ $log->id }} ? null : {{ $log->id }}">
+                    <tr class="hover:bg-charcoal-50 {{ $tab === 'system' ? 'cursor-pointer' : '' }}" @if($tab === 'system') @click="expanded = expanded === {{ $log->id }} ? null : {{ $log->id }}" @endif>
                         <td class="px-6 py-4">
                             @if($log->user)
                                 <div class="flex items-center gap-2">
@@ -63,38 +76,55 @@
                             @endif
                         </td>
                         <td class="px-6 py-4">
-                            @php
-                                $badgeColor = match($log->action) {
-                                    'created' => 'emerald',
-                                    'updated' => 'blue',
-                                    'deleted' => 'rose',
-                                    default => 'charcoal'
-                                };
-                            @endphp
-                            <x-badge :color="$badgeColor">{{ ucfirst($log->action) }}</x-badge>
+                            @if($tab === 'activities')
+                                <x-badge :color="$log->type_color">{{ ucfirst($log->type) }}</x-badge>
+                            @else
+                                @php
+                                    $badgeColor = match($log->action) {
+                                        'created' => 'emerald',
+                                        'updated' => 'blue',
+                                        'deleted' => 'rose',
+                                        default => 'charcoal'
+                                    };
+                                @endphp
+                                <x-badge :color="$badgeColor">{{ ucfirst($log->action) }}</x-badge>
+                            @endif
                         </td>
                         <td class="px-6 py-4 text-charcoal-700 font-medium">
-                            {{ class_basename($log->auditable_type) }} #{{ $log->auditable_id }}
+                            @if($tab === 'activities')
+                                @if($log->activitable)
+                                    <span class="inline-flex items-center gap-1">
+                                        <svg class="w-4 h-4 text-charcoal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                        {{ $log->activitable->name ?? 'Unknown' }}
+                                    </span>
+                                @else
+                                    <span class="text-charcoal-400 italic">Deleted/Unknown</span>
+                                @endif
+                            @else
+                                {{ class_basename($log->auditable_type) }} #{{ $log->auditable_id }}
+                            @endif
                         </td>
                         <td class="px-6 py-4 text-charcoal-600">
-                            {{ $log->description }}
-                            @if(!empty($log->old_values) || !empty($log->new_values))
+                            {{ $tab === 'activities' ? ($log->description ?? $log->subject ?? '-') : $log->description }}
+                            @if($tab === 'system' && (!empty($log->old_values) || !empty($log->new_values)))
                                 <span class="text-xs text-rose-500 block hover:underline mt-1 font-medium flex items-center gap-1">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                     View changes
                                 </span>
                             @endif
                         </td>
-                        <td class="px-6 py-4 text-charcoal-500 font-mono text-xs">
-                            {{ $log->ip_address ?? '-' }}
-                        </td>
+                        @if($tab === 'system')
+                            <td class="px-6 py-4 text-charcoal-500 font-mono text-xs">
+                                {{ $log->ip_address ?? '-' }}
+                            </td>
+                        @endif
                         <td class="px-6 py-4 text-charcoal-500">
-                            {{ $log->created_at->format('d M Y H:i:s') }}
+                            {{ $tab === 'activities' ? $log->activity_date->format('d M Y H:i') : $log->created_at->format('d M Y H:i:s') }}
                         </td>
                     </tr>
                     
-                    {{-- Detail panel for diffs --}}
-                    @if(!empty($log->old_values) || !empty($log->new_values))
+                    {{-- Detail panel for diffs (only for system tab) --}}
+                    @if($tab === 'system' && (!empty($log->old_values) || !empty($log->new_values)))
                         <tr x-show="expanded === {{ $log->id }}" x-transition style="display: none;">
                             <td colspan="6" class="px-6 py-4 bg-charcoal-50 border-t border-b border-charcoal-200">
                                 <div class="grid grid-cols-1 gap-2 max-w-4xl">

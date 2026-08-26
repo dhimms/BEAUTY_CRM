@@ -95,6 +95,58 @@ Overview of BeautyCRM performance — {{ now()->translatedFormat("F Y") }}
         </div>
     </div>
 
+    {{-- Global Target Banner --}}
+    <x-card class="border border-emerald-100 shadow-sm bg-white overflow-hidden relative">
+        <div class="absolute right-0 top-0 w-64 h-full bg-gradient-to-l from-emerald-50/50 to-transparent pointer-events-none"></div>
+        
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-6">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-serif text-lg font-semibold text-charcoal-900 leading-tight">Target Revenue Penjualan</h3>
+                    <p class="text-xs text-charcoal-500 mt-0.5">Realisasi Omset Won vs Target Manager Bulan Ini</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 lg:flex gap-6 lg:gap-10">
+                <div>
+                    <p class="text-[10px] font-mono tracking-wider uppercase text-charcoal-400 mb-1">Target Per Sales</p>
+                    <p class="font-medium text-charcoal-900">Rp {{ number_format($globalTargetData['target_per_sales'], 0, ',', '.') }}</p>
+                </div>
+                <div class="pl-4 lg:pl-0 border-l lg:border-l-0 lg:border-r lg:pr-10 border-charcoal-100">
+                    <p class="text-[10px] font-mono tracking-wider uppercase text-charcoal-400 mb-1">Total Target Tim</p>
+                    <p class="font-medium text-charcoal-900">Rp {{ number_format($globalTargetData['total_target'], 0, ',', '.') }} <span class="text-xs text-charcoal-400 font-normal">({{ $globalTargetData['total_sales'] }} Sales)</span></p>
+                </div>
+                <div>
+                    <p class="text-[10px] font-mono tracking-wider uppercase text-charcoal-400 mb-1">Realisasi (Won)</p>
+                    <p class="font-medium text-emerald-600">Rp {{ number_format($globalTargetData['realisasi'], 0, ',', '.') }}</p>
+                </div>
+                <div>
+                    <p class="text-[10px] font-mono tracking-wider uppercase text-charcoal-400 mb-1">Sisa Target</p>
+                    @if($globalTargetData['is_tercapai'])
+                        <p class="font-medium text-emerald-600">Rp 0 <span class="text-xs text-emerald-500 font-normal">(Tercapai)</span></p>
+                    @else
+                        <p class="font-medium text-amber-600">Rp {{ number_format($globalTargetData['sisa_target'], 0, ',', '.') }}</p>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <div class="relative">
+            <div class="flex justify-between items-end mb-2">
+                <span class="text-xs font-medium text-charcoal-600">Pencapaian Target Tim <span class="text-charcoal-400 font-normal">({{ $globalTargetData['total_sales'] }} Sales Aktif)</span></span>
+                <span class="text-sm font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">{{ $globalTargetData['percent_raw'] }}% Total Achieved</span>
+            </div>
+            <div class="w-full bg-charcoal-100 rounded-full h-3 overflow-hidden">
+                <div class="h-3 rounded-full bg-emerald-500 transition-all duration-1000" style="width: {{ $globalTargetData['percent'] }}%"></div>
+            </div>
+        </div>
+    </x-card>
+
     {{-- Charts Row 1: Lead Trend + Leads by Source --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <x-card class="lg:col-span-2">
@@ -166,8 +218,8 @@ Overview of BeautyCRM performance — {{ now()->translatedFormat("F Y") }}
                         <tr>
                             <th class="px-4 py-3 font-medium">#</th>
                             <th class="px-4 py-3 font-medium">Sales Rep</th>
-                            <th class="px-4 py-3 font-medium text-center">Won</th>
-                            <th class="px-4 py-3 font-medium text-center">Target Bulanan</th>
+                            <th class="px-4 py-3 font-medium text-right">Revenue (Won)</th>
+                            <th class="px-4 py-3 font-medium text-left w-1/3">Pencapaian Target</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-charcoal-100">
@@ -185,8 +237,23 @@ Overview of BeautyCRM performance — {{ now()->translatedFormat("F Y") }}
                                         {{ $sales->name }}
                                     </div>
                                 </td>
-                                <td class="px-4 py-3 text-center font-semibold text-emerald-600">{{ $sales->won_this_month }}</td>
-                                <td class="px-4 py-3 text-center text-charcoal-700 font-mono text-xs">{{ $sales->monthly_target ?? 20 }}</td>
+                                <td class="px-4 py-3 text-right font-semibold text-emerald-600 whitespace-nowrap">
+                                    Rp {{ number_format($sales->revenue_this_month ?? 0, 0, ',', '.') }}
+                                </td>
+                                <td class="px-4 py-3">
+                                    @php
+                                        $target = $sales->revenue_target ?? 4000000;
+                                        $achieved = $sales->revenue_this_month ?? 0;
+                                        $pct = $target > 0 ? min(100, round(($achieved / $target) * 100)) : 0;
+                                        $color = $pct >= 100 ? 'bg-emerald-500' : ($pct >= 50 ? 'bg-amber-500' : 'bg-rose-500');
+                                    @endphp
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-full bg-charcoal-100 rounded-full h-1.5 overflow-hidden">
+                                            <div class="h-1.5 rounded-full {{ $color }} transition-all duration-1000" style="width: {{ $pct }}%"></div>
+                                        </div>
+                                        <span class="text-xs font-mono font-medium {{ $pct >= 100 ? 'text-emerald-600' : 'text-charcoal-500' }} w-8 text-right">{{ $pct }}%</span>
+                                    </div>
+                                </td>
                             </tr>
                         @empty
                             <tr>

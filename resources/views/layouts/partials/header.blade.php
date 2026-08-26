@@ -1,7 +1,7 @@
 <header class="sticky top-0 z-30 bg-cream/80 backdrop-blur-xl border-b border-charcoal-200/50">
     <div class="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
 
-        {{-- Left: Mobile menu + Search --}}
+        {{-- Left: Mobile menu + Page Title --}}
         <div class="flex items-center gap-4">
             {{-- Mobile hamburger --}}
             <button @click="sidebarMobile = !sidebarMobile" class="lg:hidden text-charcoal-600">
@@ -10,16 +10,10 @@
                 </svg>
             </button>
 
-            {{-- Search --}}
-            <div class="hidden sm:block relative">
-                <svg class="w-4 h-4 text-charcoal-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none"
-                    stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input type="text" placeholder="Search..."
-                    class="pl-10 pr-4 py-2 w-64 bg-white border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-300 transition-all">
-            </div>
+            {{-- Page Title in Header --}}
+            <h2 class="text-lg font-serif font-semibold text-charcoal-800 hidden sm:block truncate max-w-[200px] md:max-w-xs">
+                @yield('page-header')
+            </h2>
         </div>
 
         {{-- Right: Notifications + Profile --}}

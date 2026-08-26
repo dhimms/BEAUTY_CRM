@@ -145,12 +145,41 @@ class DashboardController extends Controller
                 ->whereMonth('closed_at', $now->month)
                 ->whereYear('closed_at', $now->year)
             ])
-            // [FITUR BARU] Perhitungan total revenue (withSum) telah dihapus dari tabel Top Sales ini, karena kita hanya menampilkan jumlah won deals.
-            // orderByDesc('won_this_month') adalah method yang digunakan untuk mengurutkan data berdasarkan won_this_month
-            // method ini 'won_this_month' sudah kita buat di model
-            ->orderByDesc('won_this_month')
+            ->withSum(['assignedDeals as revenue_this_month' => fn($q) => $q
+                ->won()
+                ->whereMonth('closed_at', $now->month)
+                ->whereYear('closed_at', $now->year)
+            ], 'value')
+            ->orderByDesc('revenue_this_month')
             ->limit(5) 
             ->get();
+
+        // ─── Global Revenue Target Banner ─────────────────────
+        // Hitung total sales aktif
+        $totalSalesActive = User::role('Sales')->count();
+        // Asumsi target per sales (bisa diambil dari setting/manager, sementara kita hitung rata-rata atau set manual)
+        // Kita bisa jumlahkan semua revenue_target dari tiap user Sales, tapi untuk simplifikasi jika default-nya sama:
+        $targetPerSales = 4000000; 
+        $totalTargetTim = User::role('Sales')->sum('revenue_target') > 0 ? User::role('Sales')->sum('revenue_target') : ($targetPerSales * $totalSalesActive);
+        
+        $globalRevenue = Deal::won()
+            ->whereMonth('closed_at', $now->month)
+            ->whereYear('closed_at', $now->year)
+            ->sum('value');
+            
+        $sisaTarget = $totalTargetTim - $globalRevenue;
+        $globalTargetPercent = $totalTargetTim > 0 ? round(($globalRevenue / $totalTargetTim) * 100, 1) : 100;
+
+        $globalTargetData = [
+            'total_sales' => $totalSalesActive,
+            'target_per_sales' => $targetPerSales,
+            'total_target' => $totalTargetTim,
+            'realisasi' => $globalRevenue,
+            'sisa_target' => $sisaTarget > 0 ? $sisaTarget : 0,
+            'is_tercapai' => $sisaTarget <= 0,
+            'percent' => min(100, $globalTargetPercent),
+            'percent_raw' => $globalTargetPercent
+        ];
 
         return view('admin.dashboard', compact(
             'kpi',
@@ -158,7 +187,8 @@ class DashboardController extends Controller
             'leadsBySource',
             'pipelineSummary',
             'recentActivities',
-            'topSales'
+            'topSales',
+            'globalTargetData'
         ));
     }
 }

@@ -58,9 +58,9 @@
                             {{ $deal->lead->name ?? '-' }}
                         </p>
 
-                        {{-- Value + Close Date --}}
+                        {{-- Expected Close Date --}}
                         <div class="flex items-center justify-between mt-3">
-                            <span class="text-xs font-semibold text-emerald-600 font-mono">{{ $deal->formatted_value }}</span>
+                            <div></div> {{-- Spacer to push date to right --}}
                             @if($deal->expected_close_date)
                                 <span class="text-[10px] text-charcoal-400 font-mono flex items-center gap-1">
                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -85,14 +85,9 @@
                     </div>
                 @endif
             </div>
-
-            {{-- Column Footer --}}
-            <div class="bg-white rounded-b-xl border border-charcoal-200 border-t-0 px-4 py-2 mt-0 -mt-px">
-                <div class="flex items-center justify-between">
-                    <span class="text-[10px] font-mono text-charcoal-400 uppercase">Total Value</span>
-                    <span class="text-xs font-semibold text-charcoal-700 font-mono">Rp {{ number_format($totalValue, 0, ',', '.') }}</span>
-                </div>
-            </div>
+            
+            {{-- Spacer for bottom rounding since footer is removed --}}
+            <div class="bg-charcoal-50/50 border-t-0 rounded-b-xl px-4 py-1"></div>
         </div>
     @endforeach
 </div>

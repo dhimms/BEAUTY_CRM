@@ -17,6 +17,13 @@ class SettingsController extends Controller
             'company_address' => config('beauty-crm.company_address', ''),
             'notify_new_lead' => config('beauty-crm.notify_new_lead', true),
             'notify_won_deal' => config('beauty-crm.notify_won_deal', true),
+            // API Settings
+            'fonnte_token'    => env('FONNTE_TOKEN', ''),
+            'mail_host'       => env('MAIL_HOST', 'smtp.mailgun.org'),
+            'mail_port'       => env('MAIL_PORT', 587),
+            'mail_username'   => env('MAIL_USERNAME', ''),
+            'mail_password'   => env('MAIL_PASSWORD', ''),
+            'mail_from_address'=> env('MAIL_FROM_ADDRESS', 'hello@example.com'),
         ];
         return view('admin.settings.index', compact('settings'));
     }
@@ -30,6 +37,13 @@ class SettingsController extends Controller
             'company_address' => ['nullable', 'string'],
             'notify_new_lead' => ['boolean'],
             'notify_won_deal' => ['boolean'],
+            // API Settings
+            'fonnte_token'    => ['nullable', 'string'],
+            'mail_host'       => ['nullable', 'string'],
+            'mail_port'       => ['nullable', 'integer'],
+            'mail_username'   => ['nullable', 'string'],
+            'mail_password'   => ['nullable', 'string'],
+            'mail_from_address'=> ['nullable', 'email'],
         ]);
 
         // Write to .env
@@ -43,6 +57,13 @@ class SettingsController extends Controller
             'COMPANY_ADDRESS' => $validated['company_address'] ?? '',
             'NOTIFY_NEW_LEAD' => $request->boolean('notify_new_lead') ? 'true' : 'false',
             'NOTIFY_WON_DEAL' => $request->boolean('notify_won_deal') ? 'true' : 'false',
+            // API
+            'FONNTE_TOKEN'    => $validated['fonnte_token'] ?? '',
+            'MAIL_HOST'       => $validated['mail_host'] ?? '',
+            'MAIL_PORT'       => $validated['mail_port'] ?? '',
+            'MAIL_USERNAME'   => $validated['mail_username'] ?? '',
+            'MAIL_PASSWORD'   => $validated['mail_password'] ?? '',
+            'MAIL_FROM_ADDRESS'=> $validated['mail_from_address'] ?? '',
         ];
 
         foreach ($map as $key => $value) {
@@ -54,8 +75,10 @@ class SettingsController extends Controller
             }
         }
 
-        file_put_contents($envPath, $envContent);
-        Artisan::call('config:clear');
+        register_shutdown_function(function () use ($envPath, $envContent) {
+            file_put_contents($envPath, $envContent);
+            \Illuminate\Support\Facades\Artisan::call('config:clear');
+        });
 
         return redirect()->route('admin.settings.index')
             ->with('success', 'Pengaturan berhasil disimpan.');

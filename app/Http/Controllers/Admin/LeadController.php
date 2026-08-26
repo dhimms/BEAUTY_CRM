@@ -44,7 +44,7 @@ class LeadController extends Controller
     {
         $lead = Lead::create($request->validated() + ['created_by' => auth()->id()]);
         
-        if ($lead->assigned_to && $lead->assignedUser) {
+        if ($lead->assigned_to && $lead->assignedUser && config('beauty-crm.notify_new_lead')) {
             $lead->assignedUser->notify(new LeadAssignedNotification($lead));
         }
         
@@ -70,7 +70,7 @@ class LeadController extends Controller
         $oldAssignedTo = $lead->assigned_to;
         $lead->update($request->validated());
         
-        if ($lead->assigned_to && $lead->assigned_to !== $oldAssignedTo && $lead->assignedUser) {
+        if ($lead->assigned_to && $lead->assigned_to !== $oldAssignedTo && $lead->assignedUser && config('beauty-crm.notify_new_lead')) {
             $lead->assignedUser->notify(new LeadAssignedNotification($lead));
         }
 

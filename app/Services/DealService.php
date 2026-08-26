@@ -157,12 +157,27 @@ class DealService
             
             $lead = $deal->lead;
 
-            // Jika channel email, kirim email sungguhan
             if ($channel === 'email' && !empty($lead->email)) {
                 try {
                     \Illuminate\Support\Facades\Mail::to($lead->email)->send(new \App\Mail\BlastMessageMail($message));
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error("Gagal kirim blast email ke {$lead->email}: " . $e->getMessage());
+                }
+            } elseif ($channel === 'whatsapp' && !empty($lead->phone)) {
+                try {
+                    $token = env('FONNTE_TOKEN');
+                    if ($token) {
+                        \Illuminate\Support\Facades\Http::withHeaders([
+                            'Authorization' => $token
+                        ])->post('https://api.fonnte.com/send', [
+                            'target' => $lead->phone,
+                            'message' => $message,
+                        ]);
+                    } else {
+                        \Illuminate\Support\Facades\Log::warning("Fonnte Token is missing, cannot send WA blast to {$lead->phone}");
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Gagal kirim blast WA ke {$lead->phone}: " . $e->getMessage());
                 }
             }
 

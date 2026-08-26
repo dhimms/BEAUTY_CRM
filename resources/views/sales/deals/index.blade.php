@@ -75,6 +75,7 @@
                         <th class="text-left px-6 py-3 text-xs font-mono text-charcoal-400 uppercase tracking-wider hidden sm:table-cell">Lead</th>
                         <th class="text-left px-6 py-3 text-xs font-mono text-charcoal-400 uppercase tracking-wider hidden md:table-cell">Stage</th>
                         <th class="text-left px-6 py-3 text-xs font-mono text-charcoal-400 uppercase tracking-wider">Status</th>
+                        <th class="text-left px-6 py-3 text-xs font-mono text-charcoal-400 uppercase tracking-wider hidden lg:table-cell">Terakhir Dihubungi</th>
                         <th class="text-left px-6 py-3 text-xs font-mono text-charcoal-400 uppercase tracking-wider hidden lg:table-cell">Expected Close</th>
                         <th class="text-right px-6 py-3 text-xs font-mono text-charcoal-400 uppercase tracking-wider">Aksi</th>
                     </tr>
@@ -107,6 +108,18 @@
                             </td>
                             <td class="px-6 py-4">
                                 <x-badge :color="$deal->status_color" size="xs">{{ ucfirst($deal->status) }}</x-badge>
+                            </td>
+                            <td class="px-6 py-4 hidden lg:table-cell text-xs text-charcoal-500">
+                                @if($deal->lead && $deal->lead->latestActivity)
+                                    <div class="flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5 text-{{ $deal->lead->latestActivity->type_color }}-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        <span title="{{ $deal->lead->latestActivity->description }}">
+                                            {{ $deal->lead->latestActivity->activity_date->diffForHumans() }}
+                                        </span>
+                                    </div>
+                                @else
+                                    <span class="text-charcoal-400 italic">Belum ada aktivitas</span>
+                                @endif
                             </td>
                             <td class="px-6 py-4 hidden lg:table-cell">
                                 <span class="text-xs font-mono text-charcoal-500">

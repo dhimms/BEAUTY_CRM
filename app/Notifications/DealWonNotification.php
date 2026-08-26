@@ -36,10 +36,14 @@ class DealWonNotification extends Notification
     //mengirim data notifikasi ke database
     public function toDatabase(object $notifiable): array
     {
+        $url = $notifiable->hasRole('Manager') 
+            ? route('manager.pipeline.index') 
+            : route('admin.deals.index');
+
         return [
             'title' => 'Deal Won!',
             'message' => "{$this->deal->assignedUser?->name} berhasil memenangkan deal: {$this->deal->name}",
-            'url' => route('admin.deals.index'),
+            'url' => $url,
             'type' => 'deal_won',
         ];
     }
