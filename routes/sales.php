@@ -7,7 +7,7 @@ use App\Http\Controllers\Sales\DealController;
 use App\Http\Controllers\Sales\ActivityController;
 use App\Http\Controllers\Sales\CustomerController;
 
-Route::middleware(['role:Sales'])->prefix('sales')->name('sales.')->group(function () {
+Route::middleware(['role:Sales|Admin|Manager'])->prefix('sales')->name('sales.')->group(function () {
     // Customers
     Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index'); // -> CustomerController@index | Menu Sidebar "Customers" | Daftar pelanggan Deal Won
 

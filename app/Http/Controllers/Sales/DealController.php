@@ -29,12 +29,15 @@ class DealController extends Controller
      */
     public function pipeline(Request $request)
     {
+        $user = auth()->user();
         $stages = PipelineStage::ordered()
-            ->with(['deals' => function ($q) {
-                $q->where('assigned_to', auth()->id())
-                  ->where('status', 'open')
-                  ->with(['lead', 'assignedUser'])
-                  ->orderBy('updated_at', 'desc');
+            ->with(['deals' => function ($q) use ($user) {
+                $q->when(!$user->isAdmin() && !$user->isManager(), function ($query) use ($user) {
+                    $query->where('assigned_to', $user->id);
+                })
+                ->where('status', 'open')
+                ->with(['lead', 'assignedUser'])
+                ->orderBy('updated_at', 'desc');
             }])
             ->get();
 
@@ -153,12 +156,13 @@ class DealController extends Controller
      */
     public function moveStage(Request $request, Deal $deal)
     {
-        if ($deal->assigned_to !== auth()->id()) {
-            abort(403);
+        $user = auth()->user();
+        if ($deal->assigned_to !== $user->id && !$user->isAdmin() && !$user->isManager()) {
+            return response()->json(['error' => 'Anda tidak memiliki akses untuk memindahkan deal ini.'], 403);
         }
 
         if ($deal->status !== 'open') {
-            return response()->json(['error' => 'Deal sudah closed.'], 422);
+            return response()->json(['error' => 'Deal sudah ditutup (closed) dan tidak dapat dipindahkan.'], 422);
         }
 
         try {

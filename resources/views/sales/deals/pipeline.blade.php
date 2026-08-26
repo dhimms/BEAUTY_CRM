@@ -46,6 +46,7 @@
                 @foreach($stageDeals as $deal)
                     <div class="kanban-card bg-white rounded-xl border border-charcoal-200 p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow group"
                          data-deal-id="{{ $deal->id }}"
+                         data-value="{{ $deal->value }}"
                          style="border-left: 3px solid {{ $stage->color }}">
                         {{-- Deal Name --}}
                         <a href="{{ route('sales.deals.show', $deal) }}" class="text-sm font-medium text-charcoal-800 hover:text-blue-600 transition-colors block truncate">
@@ -79,11 +80,9 @@
                     </div>
                 @endforeach
 
-                @if($stageDeals->isEmpty())
-                    <div class="text-center py-8">
-                        <p class="text-xs text-charcoal-400">Tidak ada deal</p>
-                    </div>
-                @endif
+                <div class="empty-placeholder text-center py-8 {{ $stageDeals->isNotEmpty() ? 'hidden' : '' }}">
+                    <p class="text-xs text-charcoal-400">Tidak ada deal</p>
+                </div>
             </div>
 
             {{-- Column Footer --}}
@@ -111,6 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
             chosenClass: 'ring-2 ring-blue-400',
             dragClass: 'shadow-xl',
             draggable: '.kanban-card',
+            filter: '.empty-placeholder',
             easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
 
             onEnd: function(evt) {
@@ -120,9 +120,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (newStageId === oldStageId) return;
 
-                // Update card left border color
+                // Update card left border color immediately
                 const stageColor = evt.to.style.borderTopColor;
                 evt.item.style.borderLeftColor = stageColor;
+
+                // Optimistically update counts and totals
+                updateColumnStats(evt.from);
+                updateColumnStats(evt.to);
 
                 // Send AJAX request
                 fetch(`/sales/deals/${dealId}/move-stage`, {
@@ -134,34 +138,58 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     body: JSON.stringify({ stage_id: newStageId })
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        // Revert on error
-                        evt.from.appendChild(evt.item);
-                        showToast(data.error, 'error');
-                    } else {
-                        showToast(data.message, 'success');
-                        updateColumnCounts();
+                .then(async response => {
+                    const data = await response.json();
+                    if (!response.ok || data.error) {
+                        throw new Error(data.error || 'Gagal memindahkan deal.');
                     }
+                    return data;
+                })
+                .then(data => {
+                    showToast(data.message, 'success');
                 })
                 .catch(err => {
+                    // Revert on error
                     evt.from.appendChild(evt.item);
-                    showToast('Gagal memindahkan deal.', 'error');
+                    evt.item.style.borderLeftColor = evt.from.style.borderTopColor;
+                    updateColumnStats(evt.from);
+                    updateColumnStats(evt.to);
+                    showToast(err.message || 'Gagal memindahkan deal.', 'error');
                 });
             }
         });
     });
 
-    function updateColumnCounts() {
-        columns.forEach(function(column) {
-            const cards = column.querySelectorAll('.kanban-card');
-            const header = column.previousElementSibling;
-            if (header) {
-                const countBadge = header.querySelector('.rounded-full');
-                if (countBadge) countBadge.textContent = cards.length;
+    function updateColumnStats(column) {
+        if (!column) return;
+        const cards = column.querySelectorAll('.kanban-card');
+        const countBadge = column.previousElementSibling?.querySelector('.rounded-full');
+        const emptyPlaceholder = column.querySelector('.empty-placeholder');
+        const footerTotal = column.nextElementSibling?.querySelector('span.font-semibold');
+
+        // Update count badge
+        if (countBadge) {
+            countBadge.textContent = cards.length;
+        }
+
+        // Toggle empty placeholder
+        if (emptyPlaceholder) {
+            if (cards.length === 0) {
+                emptyPlaceholder.classList.remove('hidden');
+            } else {
+                emptyPlaceholder.classList.add('hidden');
             }
-        });
+        }
+
+        // Update total value in column footer
+        if (footerTotal) {
+            let total = 0;
+            cards.forEach(card => {
+                const val = parseFloat(card.dataset.value) || 0;
+                total += val;
+            });
+            footerTotal.textContent = 'Rp ' + total.toLocaleString('id-ID');
+        }
     }
 
     function showToast(message, type) {
