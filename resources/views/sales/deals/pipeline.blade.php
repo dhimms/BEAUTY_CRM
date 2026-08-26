@@ -32,7 +32,7 @@
                     <div class="flex items-center gap-2">
                         <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: {{ $stage->color }}"></div>
                         <h3 class="text-sm font-semibold text-charcoal-800">{{ $stage->name }}</h3>
-                        <span class="inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold text-charcoal-500 bg-charcoal-100 rounded-full">{{ $stageDeals->count() }}</span>
+                        <span class="deal-count-badge inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold text-charcoal-500 bg-charcoal-100 rounded-full">{{ $stageDeals->count() }}</span>
                     </div>
                     <span class="text-xs font-mono text-charcoal-400">{{ $stage->probability }}%</span>
                 </div>
@@ -44,11 +44,12 @@
                  style="border-top: 3px solid {{ $stage->color }}; min-height: 200px;">
 
                 @foreach($stageDeals as $deal)
-                    <div class="kanban-card bg-white rounded-xl border border-charcoal-200 p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow group"
+                    <div class="kanban-card bg-white rounded-xl border border-charcoal-200 p-3 hover:shadow-md transition-shadow group relative cursor-move"
                          data-deal-id="{{ $deal->id }}"
-                         style="border-left: 3px solid {{ $stage->color }}">
+                         style="border-left: 3px solid {{ $stage->color }}; user-select: none;">
+                         
                         {{-- Deal Name --}}
-                        <a href="{{ route('sales.deals.show', $deal) }}" class="text-sm font-medium text-charcoal-800 hover:text-blue-600 transition-colors block truncate">
+                        <a href="{{ route('sales.deals.show', $deal) }}" draggable="false" class="text-sm font-medium text-charcoal-800 hover:text-blue-600 transition-colors block truncate pr-6" style="pointer-events: auto;">
                             {{ $deal->name }}
                         </a>
 
@@ -72,7 +73,7 @@
                         {{-- Sales Avatar --}}
                         @if($deal->assignedUser)
                             <div class="flex items-center gap-2 mt-2 pt-2 border-t border-charcoal-100">
-                                <img src="{{ $deal->assignedUser->avatar_url }}" class="w-5 h-5 rounded-full" alt="{{ $deal->assignedUser->name }}">
+                                <img src="{{ $deal->assignedUser->avatar_url }}" draggable="false" class="w-5 h-5 rounded-full" alt="{{ $deal->assignedUser->name }}">
                                 <span class="text-[10px] text-charcoal-400 truncate">{{ $deal->assignedUser->name }}</span>
                             </div>
                         @endif
@@ -93,67 +94,85 @@
 </div>
 
 @push('scripts')
+<!-- Fallback SortableJS if jsdelivr fails -->
+<script src="https://unpkg.com/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const columns = document.querySelectorAll('.kanban-column');
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    try {
+        if (typeof Sortable === 'undefined') {
+            alert('CRITICAL ERROR: Plugin SortableJS gagal dimuat oleh browser Anda! Pastikan koneksi internet stabil dan matikan adblocker.');
+            return;
+        }
 
-    columns.forEach(function(column) {
-        new Sortable(column, {
-            group: 'pipeline',
-            animation: 200,
-            ghostClass: 'opacity-40',
-            chosenClass: 'ring-2 ring-blue-400',
-            dragClass: 'shadow-xl',
-            draggable: '.kanban-card',
-            easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
-            onEnd: function(evt) {
-                const dealId = evt.item.dataset.dealId;
-                const newStageId = evt.to.dataset.stageId;
-                const oldStageId = evt.from.dataset.stageId;
+        if (!csrfToken) {
+            alert('ERROR: CSRF Token tidak ditemukan di halaman ini!');
+            return;
+        }
 
-                if (newStageId === oldStageId) return;
+        columns.forEach(function(column) {
+            new Sortable(column, {
+                group: 'pipeline',
+                animation: 150,
+                ghostClass: 'opacity-50',
+                draggable: '.kanban-card',
 
-                // Update card left border color
-                const stageColor = evt.to.style.borderTopColor;
-                evt.item.style.borderLeftColor = stageColor;
+                onEnd: function(evt) {
+                    const dealId = evt.item.dataset.dealId;
+                    const newStageId = evt.to.dataset.stageId;
+                    const oldStageId = evt.from.dataset.stageId;
 
-                // Send AJAX request
-                fetch(`/sales/deals/${dealId}/move-stage`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json',
-                    },
-                    body: JSON.stringify({ stage_id: newStageId })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        // Revert on error
+                    if (newStageId === oldStageId) return;
+
+                    // Update card left border color
+                    const stageColor = evt.to.style.borderTopColor;
+                    evt.item.style.borderLeftColor = stageColor;
+
+                    // Send AJAX request
+                    fetch(`/sales/deals/${dealId}/move-stage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({ stage_id: newStageId })
+                    })
+                    .then(async response => {
+                        if (!response.ok) {
+                            const text = await response.text();
+                            throw new Error(`HTTP Error ${response.status}: ${text.substring(0, 100)}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.error) {
+                            evt.from.appendChild(evt.item);
+                            alert('Gagal dari Server: ' + data.error);
+                        } else {
+                            showToast(data.message, 'success');
+                            updateColumnCounts();
+                        }
+                    })
+                    .catch(err => {
                         evt.from.appendChild(evt.item);
-                        showToast(data.error, 'error');
-                    } else {
-                        showToast(data.message, 'success');
-                        updateColumnCounts();
-                    }
-                })
-                .catch(err => {
-                    evt.from.appendChild(evt.item);
-                    showToast('Gagal memindahkan deal.', 'error');
-                });
-            }
+                        alert('Error Sistem: ' + err.message);
+                    });
+                }
+            });
         });
-    });
+    } catch (e) {
+        alert('FATAL JAVASCRIPT ERROR: ' + e.message);
+    }
 
     function updateColumnCounts() {
         columns.forEach(function(column) {
             const cards = column.querySelectorAll('.kanban-card');
             const header = column.previousElementSibling;
             if (header) {
-                const countBadge = header.querySelector('.rounded-full');
+                const countBadge = header.querySelector('.deal-count-badge');
                 if (countBadge) countBadge.textContent = cards.length;
             }
         });

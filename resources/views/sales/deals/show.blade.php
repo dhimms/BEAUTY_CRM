@@ -217,7 +217,7 @@
                 <div class="absolute left-4 top-0 bottom-0 w-px bg-charcoal-200"></div>
                 <div class="space-y-4">
                     @foreach($deal->activities as $activity)
-                        <div class="relative flex gap-4 pl-10" x-data="{ expanded: false }">
+                        <div class="relative flex gap-4 pl-10" x-data="{ expanded: false, showEditModal: false }">
                             <div class="absolute left-2.5 w-3 h-3 rounded-full bg-{{ $activity->type_color }}-500 ring-4 ring-white"></div>
                             <div class="flex-1 bg-charcoal-50/50 rounded-xl p-4 hover:bg-charcoal-50 transition-colors group">
                                 <div class="flex items-start justify-between">
@@ -255,6 +255,9 @@
                                     </div>
                                     <div class="flex items-center gap-2 flex-shrink-0 ml-4">
                                         <span class="text-xs font-mono text-charcoal-400">{{ $activity->activity_date ? $activity->activity_date->format('d M H:i') : $activity->created_at->format('d M H:i') }}</span>
+                                        <button @click="showEditModal = true" class="p-1 text-charcoal-400 hover:text-blue-600 transition-colors opacity-0 group-hover:opacity-100">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                        </button>
                                         <form action="{{ route('sales.activities.destroy', $activity) }}" method="POST"
                                               onsubmit="return confirm('Hapus aktivitas ini?')" class="opacity-0 group-hover:opacity-100 transition-opacity">
                                             @csrf
@@ -271,6 +274,103 @@
                                         <span class="text-xs text-charcoal-400">{{ $activity->user->name }}</span>
                                     </div>
                                 @endif
+                            </div>
+
+                            {{-- Edit Activity Modal --}}
+                            <div x-show="showEditModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center">
+                                <div class="fixed inset-0 bg-black/40" @click="showEditModal = false"></div>
+                                <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" @click.stop>
+                                    <div class="px-6 py-4 border-b border-charcoal-100 flex items-center justify-between">
+                                        <h3 class="font-serif text-lg font-semibold text-charcoal-900">Edit Aktivitas</h3>
+                                        <button @click="showEditModal = false" class="text-charcoal-400 hover:text-charcoal-600">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        </button>
+                                    </div>
+                                    <form action="{{ route('sales.activities.update', $activity) }}" method="POST" class="p-6 space-y-4">
+                                        @csrf
+                                        @method('PUT')
+                                        
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-xs font-mono text-charcoal-400 uppercase mb-1">Tipe *</label>
+                                                <select name="type" required class="w-full px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 bg-white">
+                                                    @foreach(config('beauty-crm.activity_types') as $key => $label)
+                                                        <option value="{{ $key }}" {{ $activity->type == $key ? 'selected' : '' }}>{{ $label }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-mono text-charcoal-400 uppercase mb-1">Durasi</label>
+                                                <select name="duration" class="w-full px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 bg-white">
+                                                    <option value="">-</option>
+                                                    <option value="5min" {{ $activity->duration == '5min' ? 'selected' : '' }}>5 menit</option>
+                                                    <option value="15min" {{ $activity->duration == '15min' ? 'selected' : '' }}>15 menit</option>
+                                                    <option value="30min" {{ $activity->duration == '30min' ? 'selected' : '' }}>30 menit</option>
+                                                    <option value="1hr" {{ $activity->duration == '1hr' ? 'selected' : '' }}>1 jam</option>
+                                                    <option value="2hr" {{ $activity->duration == '2hr' ? 'selected' : '' }}>2 jam</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-xs font-mono text-charcoal-400 uppercase mb-1">Subject</label>
+                                            <input type="text" name="subject" value="{{ $activity->subject }}" class="w-full px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300" placeholder="Ringkasan aktivitas...">
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-xs font-mono text-charcoal-400 uppercase mb-1">Deskripsi</label>
+                                            <textarea name="description" rows="3" class="w-full px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 resize-none" placeholder="Detail aktivitas...">{{ $activity->description }}</textarea>
+                                        </div>
+
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-xs font-mono text-charcoal-400 uppercase mb-1">Tanggal Aktivitas</label>
+                                                <input type="datetime-local" name="activity_date" value="{{ $activity->activity_date ? $activity->activity_date->format('Y-m-d\TH:i') : '' }}" class="w-full px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-mono text-charcoal-400 uppercase mb-1">Hasil</label>
+                                                <select name="result" class="w-full px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 bg-white">
+                                                    <option value="">-</option>
+                                                    @foreach(config('beauty-crm.activity_results') as $key => $label)
+                                                        <option value="{{ $key }}" {{ $activity->result == $key ? 'selected' : '' }}>{{ $label }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        {{-- Follow-up Section --}}
+                                        <div class="border-t border-charcoal-100 pt-4">
+                                            <p class="text-xs font-mono text-charcoal-400 uppercase mb-3">Jadwalkan Follow-up</p>
+                                            <div class="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label class="block text-xs text-charcoal-500 mb-1">Tanggal Follow-up</label>
+                                                    <input type="date" name="follow_up_date" value="{{ $activity->follow_up_date ? $activity->follow_up_date->format('Y-m-d') : '' }}" class="w-full px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs text-charcoal-500 mb-1">Tipe Follow-up</label>
+                                                    <select name="follow_up_type" class="w-full px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 bg-white">
+                                                        <option value="">-</option>
+                                                        <option value="call" {{ $activity->follow_up_type == 'call' ? 'selected' : '' }}>Telepon</option>
+                                                        <option value="whatsapp" {{ $activity->follow_up_type == 'whatsapp' ? 'selected' : '' }}>WhatsApp</option>
+                                                        <option value="email" {{ $activity->follow_up_type == 'email' ? 'selected' : '' }}>Email</option>
+                                                        <option value="meeting" {{ $activity->follow_up_type == 'meeting' ? 'selected' : '' }}>Meeting</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="mt-3">
+                                                <label class="block text-xs text-charcoal-500 mb-1">Catatan Follow-up</label>
+                                                <input type="text" name="follow_up_notes" value="{{ $activity->follow_up_notes }}" class="w-full px-3 py-2 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300" placeholder="Catatan untuk follow-up...">
+                                            </div>
+                                        </div>
+
+                                        <div class="flex justify-end gap-3 pt-2">
+                                            <button type="button" @click="showEditModal = false" class="px-4 py-2 text-sm text-charcoal-600 hover:text-charcoal-800 transition-colors">Batal</button>
+                                            <button type="submit" class="px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors">
+                                                Simpan Perubahan
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     @endforeach

@@ -52,7 +52,7 @@ class UserController extends Controller
         $data = $request->validated();
 
         if ($request->hasFile('avatar')) {
-            $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
+            $data['avatar'] = $request->file('avatar')->store('avatars');
         }
         // melakukan hassing password agar tidak tersimpan plain text
         $data['password'] = Hash::make($data['password']);
@@ -108,9 +108,9 @@ class UserController extends Controller
 
         if ($request->hasFile('avatar')) {
             if ($user->avatar) {
-                Storage::disk('public')->delete($user->avatar);
+                Storage::delete($user->avatar);
             }
-            $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
+            $data['avatar'] = $request->file('avatar')->store('avatars');
         }
         
         // cek apakah password kosong atau tidak

@@ -113,7 +113,7 @@ class DealController extends Controller
      */
     public function show(Deal $deal)
     {
-        if ($deal->assigned_to !== auth()->id()) {
+        if ($deal->assigned_to !== auth()->id() && !auth()->user()->hasRole(['Admin', 'Manager'])) {
             abort(403);
         }
 
@@ -138,7 +138,7 @@ class DealController extends Controller
      */
     public function update(UpdateDealRequest $request, Deal $deal)
     {
-        if ($deal->assigned_to !== auth()->id()) {
+        if ($deal->assigned_to !== auth()->id() && !auth()->user()->hasRole(['Admin', 'Manager'])) {
             abort(403);
         }
 
@@ -153,7 +153,7 @@ class DealController extends Controller
      */
     public function moveStage(Request $request, Deal $deal)
     {
-        if ($deal->assigned_to !== auth()->id()) {
+        if ($deal->assigned_to !== auth()->id() && !auth()->user()->hasRole(['Admin', 'Manager'])) {
             abort(403);
         }
 
@@ -184,7 +184,7 @@ class DealController extends Controller
      */
     public function close(CloseDealRequest $request, Deal $deal)
     {
-        if ($deal->assigned_to !== auth()->id()) {
+        if ($deal->assigned_to !== auth()->id() && !auth()->user()->hasRole(['Admin', 'Manager'])) {
             abort(403);
         }
 

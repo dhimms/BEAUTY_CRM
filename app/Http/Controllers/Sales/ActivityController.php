@@ -48,7 +48,7 @@ class ActivityController extends Controller
      */
     public function update(UpdateActivityRequest $request, Activity $activity)
     {
-        if ($activity->user_id !== auth()->id()) {
+        if ($activity->user_id !== auth()->id() && !auth()->user()->hasRole(['Admin', 'Manager'])) {
             abort(403);
         }
 
@@ -63,7 +63,7 @@ class ActivityController extends Controller
      */
     public function destroy(Activity $activity)
     {
-        if ($activity->user_id !== auth()->id()) {
+        if ($activity->user_id !== auth()->id() && !auth()->user()->hasRole(['Admin', 'Manager'])) {
             abort(403);
         }
 
@@ -78,7 +78,7 @@ class ActivityController extends Controller
      */
     public function completeFollowUp(Activity $activity)
     {
-        if ($activity->user_id !== auth()->id()) {
+        if ($activity->user_id !== auth()->id() && !auth()->user()->hasRole(['Admin', 'Manager'])) {
             abort(403);
         }
 
