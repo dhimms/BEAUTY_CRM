@@ -106,9 +106,9 @@ document.addEventListener('DOMContentLoaded', function() {
         new Sortable(column, {
             group: 'pipeline',
             animation: 200,
-            ghostClass: 'opacity-40',
-            chosenClass: 'ring-2 ring-blue-400',
-            dragClass: 'shadow-xl',
+            ghostClass: 'kanban-ghost',
+            chosenClass: 'kanban-chosen',
+            dragClass: 'kanban-drag',
             draggable: '.kanban-card',
             filter: '.empty-placeholder',
             easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
@@ -212,6 +212,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
 @push('styles')
 <style>
+    .kanban-ghost {
+        opacity: 0.4;
+    }
+    .kanban-chosen {
+        box-shadow: 0 0 0 2px #3b82f6;
+    }
+    .kanban-drag {
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    }
     .kanban-column {
         scrollbar-width: thin;
         scrollbar-color: #D1D1D1 transparent;
