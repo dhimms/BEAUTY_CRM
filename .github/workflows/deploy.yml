@@ -38,7 +38,7 @@ jobs:
           server: ftpupload.net
           username: if0_42761058
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: /public_html/ # Sesuaikan jika kamu menyimpannya di subfolder atau direktori lain (harus diakhiri garis miring)
+          server-dir: /Home/htdocs/ # Sesuaikan jika kamu menyimpannya di subfolder atau direktori lain (harus diakhiri garis miring)
           exclude: |
             **/.git*
             **/.git*/**
