@@ -39,9 +39,9 @@
             </div>
 
             {{-- Droppable Area --}}
-            <div class="kanban-column flex-1 bg-charcoal-50/50 border border-charcoal-200 border-t-0 rounded-b-xl p-2 space-y-2 overflow-y-auto"
+            <div class="kanban-column flex-1 bg-charcoal-50/50 border border-charcoal-200 border-t-0 rounded-b-xl p-2 space-y-2 overflow-y-auto custom-scrollbar"
                  data-stage-id="{{ $stage->id }}"
-                 style="border-top: 3px solid {{ $stage->color }}; min-height: 200px;">
+                 style="border-top: 3px solid {{ $stage->color }}; min-height: 200px; max-height: 650px;">
 
                 @foreach($stageDeals as $deal)
                     <div class="kanban-card bg-white rounded-xl border border-charcoal-200 p-3 hover:shadow-md transition-shadow group relative cursor-move"
