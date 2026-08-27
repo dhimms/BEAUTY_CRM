@@ -3,7 +3,7 @@ name: Deploy to infinityfree via FTP
 on:
   push:
     branches:
-      - main # Ubah ke branch utama kamu (contoh: master)di
+      - main # Ubah ke branch utama kamu (contoh: master)
 
 jobs:
   web-deploy:
@@ -38,7 +38,7 @@ jobs:
           server: ftpupload.net
           username: if0_42761058
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: /Home/htdocs/ # Sesuaikan jika kamu menyimpannya di subfolder atau direktori lain (harus diakhiri garis miring)
+          server-dir: /htdocs/ # Sesuaikan jika kamu menyimpannya di subfolder atau direktori lain (harus diakhiri garis miring)
           exclude: |
             **/.git*
             **/.git*/**
