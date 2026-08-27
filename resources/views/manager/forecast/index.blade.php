@@ -22,13 +22,13 @@
 
     {{-- KPI Summary --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <x-kpi-card label="Actual Revenue (Bulan Ini)" :value="'Rp ' . number_format($revenueData['total_revenue_this_month'], 0, ',', '.')" color="emerald"
+        <x-kpi-card label="Pendapatan Dicapai (Bulan Ini)" :value="'Rp ' . number_format($revenueData['total_revenue_this_month'], 0, ',', '.')" color="emerald"
             icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>' />
-        <x-kpi-card label="Projected Revenue" :value="'Rp ' . number_format($forecastData['total_projected'], 0, ',', '.')" color="amber"
+        <x-kpi-card label="Proyeksi Pendapatan" :value="'Rp ' . number_format($forecastData['total_projected'], 0, ',', '.')" color="amber"
             icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>' />
-        <x-kpi-card label="Best Case Pipeline" :value="'Rp ' . number_format($forecastData['best_case'], 0, ',', '.')" color="blue"
+        <x-kpi-card label="Skenario Terbaik Pipeline" :value="'Rp ' . number_format($forecastData['best_case'], 0, ',', '.')" color="blue"
             icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>' />
-        <x-kpi-card label="Worst Case Pipeline" :value="'Rp ' . number_format($forecastData['worst_case'], 0, ',', '.')" color="rose"
+        <x-kpi-card label="Skenario Terburuk Pipeline" :value="'Rp ' . number_format($forecastData['worst_case'], 0, ',', '.')" color="rose"
             icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/>' />
     </div>
 
@@ -36,8 +36,8 @@
         {{-- Revenue Forecast Chart --}}
         <div class="xl:col-span-2">
             <x-card class="h-full">
-                <h3 class="font-serif text-lg font-semibold text-charcoal-900 mb-2">Projected vs Actual Revenue</h3>
-                <p class="text-sm text-charcoal-500 mb-4">Projected Revenue = Nilai Deal × Probabilitas Tahap (Stage)</p>
+                <h3 class="font-serif text-lg font-semibold text-charcoal-900 mb-2">Proyeksi vs Pendapatan Dicapai</h3>
+                <p class="text-sm text-charcoal-500 mb-4">Proyeksi Pendapatan = Nilai Deal × Probabilitas Tahap (Stage)</p>
                 <div style="height: 350px;"><canvas id="forecastChart"></canvas></div>
             </x-card>
         </div>
@@ -53,7 +53,7 @@
                         <thead>
                             <tr class="bg-charcoal-50/50">
                                 <th class="px-6 py-3 text-left text-xs font-mono font-medium text-charcoal-500 uppercase">Bulan</th>
-                                <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Actual / Projected (Rp)</th>
+                                <th class="px-6 py-3 text-right text-xs font-mono font-medium text-charcoal-500 uppercase">Dicapai / Proyeksi (Rp)</th>
                                 <th class="px-6 py-3 text-center text-xs font-mono font-medium text-charcoal-500 uppercase">Status</th>
                             </tr>
                         </thead>
@@ -66,9 +66,9 @@
                                     </td>
                                     <td class="px-6 py-4 text-center">
                                         @if($m['is_past'])
-                                            <x-badge color="gray" size="xs">Past</x-badge>
+                                            <x-badge color="gray" size="xs">Berlalu</x-badge>
                                         @else
-                                            <x-badge color="amber" size="xs">Future</x-badge>
+                                            <x-badge color="amber" size="xs">Mendatang</x-badge>
                                         @endif
                                     </td>
                                 </tr>
@@ -105,7 +105,7 @@
                                 <div class="h-full {{ $sp['progress_raw'] >= 100 ? 'bg-emerald-500' : 'bg-blue-500' }} transition-all duration-500" style="width: {{ $sp['progress_percentage'] }}%"></div>
                             </div>
                             <div class="mt-1 flex justify-between items-center">
-                                <span class="text-[10px] text-charcoal-500">{{ $sp['members_won_this_month'] }} Deals Won</span>
+                                <span class="text-[10px] text-charcoal-500">{{ $sp['members_won_this_month'] }} Deals Berhasil</span>
                                 <span class="text-[10px] font-mono font-medium {{ $sp['progress_raw'] >= 100 ? 'text-emerald-600' : 'text-charcoal-500' }}">{{ $sp['progress_raw'] }}% Tercapai</span>
                             </div>
                         </div>
@@ -169,14 +169,14 @@ document.addEventListener('DOMContentLoaded', function() {
             labels: data.map(d => d.month_short),
             datasets: [
                 {
-                    label: 'Actual Revenue',
+                    label: 'Pendapatan Dicapai',
                     data: data.map(d => d.actual),
                     backgroundColor: '#10B981',
                     borderRadius: 6,
                     order: 2,
                 },
                 {
-                    label: 'Projected Revenue',
+                    label: 'Proyeksi Pendapatan',
                     data: data.map(d => d.projected),
                     backgroundColor: 'rgba(217, 119, 6, 0.4)',
                     borderColor: '#D97706',
