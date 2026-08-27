@@ -80,11 +80,9 @@
                     </div>
                 @endforeach
 
-                @if($stageDeals->isEmpty())
-                    <div class="text-center py-8">
-                        <p class="text-xs text-charcoal-400">Tidak ada deal</p>
-                    </div>
-                @endif
+                <div class="empty-placeholder text-center py-8 {{ $stageDeals->isNotEmpty() ? 'hidden' : '' }}">
+                    <p class="text-xs text-charcoal-400">Tidak ada deal</p>
+                </div>
             </div>
             
             {{-- Spacer for bottom rounding since footer is removed --}}
@@ -130,6 +128,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     const stageColor = evt.to.style.borderTopColor;
                     evt.item.style.borderLeftColor = stageColor;
 
+                    updateColumnCounts();
+
                     // Send AJAX request
                     fetch(`/sales/deals/${dealId}/move-stage`, {
                         method: 'POST',
@@ -151,6 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (data.error) {
                             evt.from.appendChild(evt.item);
                             alert('Gagal dari Server: ' + data.error);
+                            updateColumnCounts();
                         } else {
                             showToast(data.message, 'success');
                             updateColumnCounts();
@@ -159,10 +160,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     .catch(err => {
                         evt.from.appendChild(evt.item);
                         alert('Error Sistem: ' + err.message);
+                        updateColumnCounts();
                     });
                 }
             });
         });
+
+        // Run once on load
+        updateColumnCounts();
     } catch (e) {
         alert('FATAL JAVASCRIPT ERROR: ' + e.message);
     }
@@ -174,6 +179,22 @@ document.addEventListener('DOMContentLoaded', function() {
             if (header) {
                 const countBadge = header.querySelector('.deal-count-badge');
                 if (countBadge) countBadge.textContent = cards.length;
+            }
+
+            let placeholder = column.querySelector('.empty-placeholder');
+            if (cards.length === 0) {
+                if (!placeholder) {
+                    placeholder = document.createElement('div');
+                    placeholder.className = 'empty-placeholder text-center py-8';
+                    placeholder.innerHTML = '<p class="text-xs text-charcoal-400">Tidak ada deal</p>';
+                    column.appendChild(placeholder);
+                } else {
+                    placeholder.classList.remove('hidden');
+                }
+            } else {
+                if (placeholder) {
+                    placeholder.classList.add('hidden');
+                }
             }
         });
     }
