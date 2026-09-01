@@ -63,16 +63,18 @@ class CustomerController extends Controller
     public function blast(Request $request)
     {
         $request->validate([
-            'customer_ids' => 'required|array',
+            'customer_ids'   => 'required|array',
             'customer_ids.*' => 'exists:customers,id',
-            'channel' => 'required|in:whatsapp,email',
-            'message' => 'required|string|max:1000'
+            'channel'        => 'required|in:whatsapp,email',
+            'message'        => 'required|string',
+            'image'          => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120',
         ]);
 
         $count = $this->customerService->blastMessage(
             $request->customer_ids,
             $request->channel,
-            $request->message
+            $request->message,
+            $request->file('image')
         );
 
         return back()->with('success', "Pesan blast berhasil dikirim ke $count customer via " . ucfirst($request->channel));

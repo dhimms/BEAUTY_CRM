@@ -213,16 +213,18 @@ class DealController extends Controller
     public function blast(Request $request)
     {
         $request->validate([
-            'deal_ids' => 'required|array',
+            'deal_ids'   => 'required|array',
             'deal_ids.*' => 'exists:deals,id',
-            'channel' => 'required|in:whatsapp,email',
-            'message' => 'required|string|max:1000'
+            'channel'    => 'required|in:whatsapp,email',
+            'message'    => 'required|string',
+            'image'      => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120',
         ]);
 
         $count = $this->dealService->blastMessage(
             $request->deal_ids,
             $request->channel,
-            $request->message
+            $request->message,
+            $request->file('image')
         );
 
         return back()->with('success', "Pesan blast berhasil dikirim ke $count lead via " . ucfirst($request->channel));

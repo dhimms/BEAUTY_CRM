@@ -148,9 +148,20 @@ class DealService
     /**
      * Mengirim pesan blast ke Lead yang terhubung dengan Deal-deal yang dipilih.
      */
-    public function blastMessage(array $dealIds, string $channel, string $message): int
+    public function blastMessage(array $dealIds, string $channel, string $message, $image = null): int
     {
         $count = 0;
+
+        // Untuk WhatsApp: konversi HTML rich text ke format teks / WhatsApp Markdown (*bold*, _italic_, ~strike~, dll)
+        $plainText = $this->formatMessageForWhatsApp($message);
+
+        // Simpan gambar sementara ke local disk jika ada
+        // Path relatif terhadap storage/app/public/
+        $storedPath = null;
+        if ($image) {
+            $storedPath = $image->store('uploads/blast', 'public');
+        }
+
         foreach ($dealIds as $id) {
             $deal = Deal::with('lead')->find($id);
             if (!$deal || !$deal->lead) continue;
@@ -159,20 +170,50 @@ class DealService
 
             if ($channel === 'email' && !empty($lead->email)) {
                 try {
-                    \Illuminate\Support\Facades\Mail::to($lead->email)->send(new \App\Mail\BlastMessageMail($message));
+                    // Kirim email — gambar di-embed sebagai inline attachment (CID)
+                    // Tidak perlu URL publik, langsung embed ke dalam email
+                    \Illuminate\Support\Facades\Mail::to($lead->email)
+                        ->send(new \App\Mail\BlastMessageMail($message, $storedPath));
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error("Gagal kirim blast email ke {$lead->email}: " . $e->getMessage());
                 }
             } elseif ($channel === 'whatsapp' && !empty($lead->phone)) {
                 try {
-                    $token = env('FONNTE_TOKEN');
+                    $token = config('services.fonnte.token') ?: env('FONNTE_TOKEN');
                     if ($token) {
-                        \Illuminate\Support\Facades\Http::withHeaders([
-                            'Authorization' => $token
-                        ])->post('https://api.fonnte.com/send', [
-                            'target' => $lead->phone,
-                            'message' => $message,
+                        // Gunakan cURL + CURLFile sesuai dokumentasi resmi Fonnte
+                        $fields = [
+                            'target'  => $lead->phone,
+                            'message' => $plainText,
+                        ];
+
+                        if ($storedPath) {
+                            $absolutePath = storage_path('app/public/' . $storedPath);
+                            // CURLFile adalah cara resmi Fonnte untuk upload file
+                            $fields['file'] = new \CURLFile(
+                                $absolutePath,
+                                mime_content_type($absolutePath),
+                                basename($absolutePath)
+                            );
+                        }
+
+                        $curl = curl_init();
+                        curl_setopt_array($curl, [
+                            CURLOPT_URL            => 'https://api.fonnte.com/send',
+                            CURLOPT_RETURNTRANSFER => true,
+                            CURLOPT_POST           => true,
+                            CURLOPT_POSTFIELDS     => $fields,
+                            CURLOPT_HTTPHEADER     => ['Authorization: ' . $token],
                         ]);
+                        $response = curl_exec($curl);
+                        $curlError = curl_error($curl);
+                        curl_close($curl);
+
+                        if ($curlError) {
+                            \Illuminate\Support\Facades\Log::error("cURL error blast WA ke {$lead->phone}: " . $curlError);
+                        } else {
+                            \Illuminate\Support\Facades\Log::info("Fonnte response untuk {$lead->phone}: " . $response);
+                        }
                     } else {
                         \Illuminate\Support\Facades\Log::warning("Fonnte Token is missing, cannot send WA blast to {$lead->phone}");
                     }
@@ -183,17 +224,101 @@ class DealService
 
             // Catat ke dalam activity history untuk Lead tersebut
             \App\Models\Activity::create([
-                'user_id' => auth()->id(),
+                'user_id'          => auth()->id(),
                 'activitable_type' => \App\Models\Lead::class,
-                'activitable_id' => $lead->id,
-                'type' => $channel === 'whatsapp' ? 'whatsapp' : 'email',
-                'description' => "Kirim Blast via " . ucfirst($channel) . " (Terkait Deal: {$deal->name})",
-                'status' => 'completed',
-                'activity_date' => now(),
-                'notes' => $message
+                'activitable_id'   => $lead->id,
+                'type'             => $channel === 'whatsapp' ? 'whatsapp' : 'email',
+                'description'      => "Kirim Blast via " . ucfirst($channel) . " (Terkait Deal: {$deal->name})",
+                'status'           => 'completed',
+                'activity_date'    => now(),
+                'notes'            => $plainText . ($storedPath ? " [+gambar]" : ''),
             ]);
             $count++;
         }
         return $count;
+    }
+
+    /**
+     * Mengubah format HTML (dari Rich Text Editor) menjadi teks dengan format WhatsApp markdown yang valid.
+     */
+    protected function formatMessageForWhatsApp(string $html): string
+    {
+        if (empty(trim($html))) {
+            return '';
+        }
+
+        // 1. Tangani ordered list (<ol><li>...</li></ol>) agar bernomor 1., 2., 3., dst.
+        $html = preg_replace_callback('/<ol\b[^>]*>(.*?)<\/ol>/is', function ($matches) {
+            $count = 1;
+            return preg_replace_callback('/<li\b[^>]*>(.*?)<\/li>/is', function ($li) use (&$count) {
+                return ($count++) . '. ' . trim($li[1]) . "\n";
+            }, $matches[1]);
+        }, $html);
+
+        // 2. Tangani unordered list (<ul><li>...</li></ul>) atau list bullet
+        $html = preg_replace_callback('/<li\b[^>]*>(.*?)<\/li>/is', function ($li) {
+            return '• ' . trim($li[1]) . "\n";
+        }, $html);
+
+        // 3. Tangani Heading (<h1>..<h6>) -> teks tebal
+        $html = preg_replace_callback('/<h[1-6]\b[^>]*>(.*?)<\/h[1-6]>/is', function ($m) {
+            $content = trim(strip_tags($m[1]));
+            return $content !== '' ? "\n*" . $content . "*\n" : '';
+        }, $html);
+
+        // 4. Tangani Bold (<b>, <strong>)
+        // Whitespace di dalam tag dipindahkan ke luar tanda bintang agar WA memformatnya sebagai BOLD
+        $html = preg_replace_callback('/<(b|strong)\b[^>]*>(.*?)<\/\1>/is', function ($m) {
+            $raw = $m[2];
+            preg_match('/^(\s*)(.*?)(\s*)$/us', $raw, $parts);
+            $leading = $parts[1] ?? '';
+            $trimmed = $parts[2] ?? '';
+            $trailing = $parts[3] ?? '';
+            return $trimmed !== '' ? "{$leading}*{$trimmed}*{$trailing}" : $raw;
+        }, $html);
+
+        // 5. Tangani Italic (<i>, <em>)
+        $html = preg_replace_callback('/<(i|em)\b[^>]*>(.*?)<\/\1>/is', function ($m) {
+            $raw = $m[2];
+            preg_match('/^(\s*)(.*?)(\s*)$/us', $raw, $parts);
+            $leading = $parts[1] ?? '';
+            $trimmed = $parts[2] ?? '';
+            $trailing = $parts[3] ?? '';
+            return $trimmed !== '' ? "{$leading}_{$trimmed}_{$trailing}" : $raw;
+        }, $html);
+
+        // 6. Tangani Strikethrough (<s>, <strike>, <del>)
+        $html = preg_replace_callback('/<(s|strike|del)\b[^>]*>(.*?)<\/\1>/is', function ($m) {
+            $raw = $m[2];
+            preg_match('/^(\s*)(.*?)(\s*)$/us', $raw, $parts);
+            $leading = $parts[1] ?? '';
+            $trimmed = $parts[2] ?? '';
+            $trailing = $parts[3] ?? '';
+            return $trimmed !== '' ? "{$leading}~{$trimmed}~{$trailing}" : $raw;
+        }, $html);
+
+        // 7. Tangani Monospace / Code (<code>)
+        $html = preg_replace_callback('/<code\b[^>]*>(.*?)<\/code>/is', function ($m) {
+            $trimmed = trim($m[1]);
+            return $trimmed !== '' ? "```{$trimmed}```" : '';
+        }, $html);
+
+        // 8. Tangani paragraf kosong dan baris baru
+        $html = preg_replace('/<p>\s*<br\s*\/?>\s*<\/p>/i', "\n\n", $html);
+        $html = preg_replace('/<br\s*\/?>/i', "\n", $html);
+        $html = preg_replace('/<\/p>/i', "\n", $html);
+        $html = preg_replace('/<p\b[^>]*>/i', '', $html);
+
+        // 9. Hapus tag HTML yang tersisa
+        $text = strip_tags($html);
+
+        // 10. Decode entity HTML
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = str_replace("\xc2\xa0", ' ', $text);
+
+        // 11. Normalisasi jarak baris baru
+        $text = preg_replace("/\n{3,}/", "\n\n", $text);
+
+        return trim($text);
     }
 }

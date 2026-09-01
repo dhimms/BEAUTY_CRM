@@ -1,410 +1,260 @@
 # 📊 Analisis Lengkap Project: BEAUTY_CRM
 
-> Dokumen ini dihasilkan berdasarkan **analisis langsung source code**, bukan asumsi. Setiap informasi merujuk ke file sumber yang spesifik.
+> Dokumen ini dihasilkan berdasarkan **analisis langsung source code aktual**, mencakup arsitektur kontainerisasi **Docker**, integrasi object storage **MinIO (S3)**, sistem **Multi-Channel Blast (WhatsApp & Email)**, modul **Manager Analytics & Member Forecasting**, pipeline **Drag & Drop Kanban**, serta seluruh modul operasional CRM.
 
 ---
 
-## 1. Ringkasan Fitur
+## 1. Ringkasan Fitur & Arsitektur
 
-BEAUTY_CRM adalah sistem **Customer Relationship Management** untuk industri kecantikan (beauty) yang dibangun menggunakan **Laravel** dengan arsitektur MVC + Service Layer. Sistem menggunakan **Spatie Permission** untuk manajemen role-based access control.
+**BEAUTY_CRM** adalah sistem *Customer Relationship Management* (CRM) komprehensif yang dirancang khusus untuk industri kecantikan (klinik estetika, salon, beauty studio, dan spa). Dibangun di atas **Laravel 12**, **Tailwind CSS 4**, **Alpine.js 3**, **Vite 7**, serta arsitektur **MVC + Service Layer**, sistem ini mengimplementasikan kontrol akses berbasis peran (*Role-Based Access Control*) menggunakan **Spatie Laravel Permission**.
 
-| # | Fitur | Deskripsi |
-|---|-------|-----------|
-| 1 | **Authentication** | Login/logout, session management, pengecekan akun aktif |
-| 2 | **User Management** | CRUD user, role assignment, toggle aktif/nonaktif |
-| 3 | **Lead Management** | CRUD leads, filtering, qualify, convert ke deal |
-| 4 | **Deal/Pipeline** | CRUD deals, pipeline kanban, move stage, close won/lost |
-| 5 | **Customer Management** | CRUD customer, tagging, CS assignment |
-| 6 | **Activity Tracking** | Log aktivitas (call, WA, email, meeting), follow-up scheduling |
-| 7 | **Service Tickets** | CRUD tiket layanan, status workflow, priority tracking |
-| 8 | **Follow-up Management** | Jadwal follow-up, overdue tracking, complete marking |
-| 9 | **Reports & Analytics** | Sales performance, revenue, lost reasons, lead sources, pipeline analysis |
-| 10 | **Dashboard** | KPI cards, charts, trend analysis per role |
-| 11 | **Import/Export** | Import leads via Excel/CSV, export leads & reports |
-| 12 | **Audit Logging** | Automatic CRUD logging via Observer pattern |
-| 13 | **Notifications** | Database notifications untuk lead assignment & deal won |
-| 14 | **Settings** | Konfigurasi company info, notification toggles |
-| 15 | **Forecast** | Revenue forecasting berdasarkan weighted pipeline value |
-| 16 | **Profile** | Edit profil personal, avatar upload |
-
----
-
-## 2. Arsitektur Role-Based Access
-
-Berdasarkan [RoleSeeder.php](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/database/seeders/RoleSeeder.php):
-
-| Role | Permissions | Dashboard Route |
-|------|------------|-----------------|
-| **Admin** | All permissions | `/admin/dashboard` |
-| **Sales** | manage leads, manage deals, manage activities | `/sales/dashboard` |
-| **Customer Service** | manage customers, manage tickets, manage activities | `/cs/dashboard` |
-| **Manager** | view reports, view audit logs, manage pipeline | `/manager/dashboard` |
+| # | Modul / Fitur | Deskripsi |
+|---|---|---|
+| 1 | **Authentication & Security** | Autentikasi sesi aman, middleware verifikasi akun aktif (`CheckActiveUser`), redirect dashboard dinamis per role. |
+| 2 | **User & Target Management** | Manajemen CRUD staf, role assignment, toggle status aktif/nonaktif, serta konfigurasi target bulanan (`monthly_target` & `revenue_target`). |
+| 3 | **Lead Management** | Manajemen prospek dari berbagai sumber, kualifikasi lead (*qualified*, *unqualified*, *not fit*), dan distribusi tugas ke Sales. |
+| 4 | **Interactive Deal Pipeline** | Kanban board interaktif dengan SortableJS (drag-and-drop antar stage), pergerakan probabilitas stage, penutupan deal (*Won*/*Lost*). |
+| 5 | **Customer Management & Segmentation** | Konversi otomatis dari deal won, segmentasi tag (*VIP, Regular, dll*), tracking akumulasi belanja (*min spend*), filter interaksi terakhir. |
+| 6 | **Multi-Channel Blast Messaging** | Pengiriman pesan massal terintegrasi ke Leads/Customers via **WhatsApp API (Fonnte)** & **Email (CID Inline Attachment)** dengan logging otomatis. |
+| 7 | **Activity & Follow-Up System** | Pencatatan riwayat interaksi polimorfik (Call, WA, Email, Meeting, Catatan), pengingat follow-up harian, deteksi jadwal *overdue*. |
+| 8 | **Manager BI & Reports Center** | Laporan performa sales, analisis akuisisi pelanggan/member, evaluasi *lost reasons*, analisis sumber lead, dan rekam jejak aktivitas tim. |
+| 9 | **Pipeline & Revenue Forecasting** | Proyeksi penambahan member dan pendapatan masa depan berdasarkan probabilitas tahapan deal (*weighted pipeline value*). |
+| 10 | **Import & Export Massal** | Impor lead massal via Excel/CSV (Maatwebsite Excel) dengan validasi tipe data sel, ekspor data lead, dan ekspor laporan performa ke Excel (.xlsx/.csv). |
+| 11 | **Automated Audit Logging** | Pencatatan otomatis riwayat perubahan data (*create, update, delete*) menggunakan Observer pattern polimorfik, merekam IP dan User Agent. |
+| 12 | **Real-Time Database Notifications** | Notifikasi in-app untuk penugasan lead baru ke Sales dan pemberitahuan deal won ke Admin & Manager. |
+| 13 | **Master Data & Settings** | Manajemen master *Lead Sources*, *Pipeline Stages* (dengan drag-and-drop reorder), *Lost Reasons*, dan konfigurasi umum perusahaan. |
+| 14 | **Object Storage (MinIO S3)** | Penyimpanan file avatar dan media attachment berbasis cloud storage kompatibel AWS S3 menggunakan MinIO dalam kontainer. |
+| 15 | **Dockerized Infrastructure** | Orkestrasi kontainer terisolasi menggunakan Docker Compose (PHP-FPM, Nginx, MinIO, MinIO Setup) siap untuk dev & deployment. |
 
 ---
 
-## 3. Analisis Per-Module
+## 2. Arsitektur Infrastruktur: Docker & MinIO
+
+Aplikasi telah dimodernisasi dengan arsitektur kontainerisasi penuh menggunakan Docker Compose, memungkinkan replikasi lingkungan yang identik di berbagai mesin.
+
+```mermaid
+graph TB
+    subgraph "Host Machine (Windows / Laragon)"
+        MySQL[(MySQL Server<br/>Port 3306)]
+    end
+
+    subgraph "Docker Network (beauty_network)"
+        NGINX[Nginx 1.25 Alpine<br/>Container: beauty_crm_nginx<br/>Port 8080:80]
+        PHP[PHP-FPM 8.2 App<br/>Container: beauty_crm_app<br/>Port 9000]
+        MINIO[MinIO Server<br/>Container: beauty_crm_minio<br/>API: 9010 | Console: 9011]
+        MINIO_SETUP[MinIO Setup Job<br/>Container: beauty_crm_minio_setup<br/>Auto-bucket creator]
+        V_MINIO[(Volume: minio_data)]
+    end
+
+    Browser[Client Browser] -->|HTTP :8080| NGINX
+    Browser -->|Console :9011| MINIO
+    NGINX -->|FastCGI| PHP
+    PHP -->|Storage Driver: S3| MINIO
+    MINIO_SETUP -->|mc mb & public policy| MINIO
+    MINIO --- V_MINIO
+    PHP -->|host.docker.internal:3306| MySQL
+```
+
+### Detail Layanan Kontainer ([docker-compose.yml](file:///c:/laragon/www/BEAUTY_CRM/docker-compose.yml))
+
+1. **`app` (PHP-FPM Container)**:
+   - **Base Image**: Custom build via [docker/php/Dockerfile](file:///c:/laragon/www/BEAUTY_CRM/docker/php/Dockerfile) (PHP 8.2-FPM).
+   - **Ekstensi PHP**: `pdo_mysql`, `mbstring`, `exif`, `pcntl`, `bcmath`, `gd`, `zip`, `opcache`.
+   - **Konfigurasi Khusus**: `host.docker.internal:host-gateway` dipetakan agar PHP-FPM dapat menghubungi database MySQL host lokal (Laragon/MySQL port 3306).
+   - **Mounting**: Root project di-mount ke `/var/www`, custom php.ini di `/usr/local/etc/php/conf.d/local.ini`.
+
+2. **`nginx` (Web Server)**:
+   - **Image**: `nginx:1.25-alpine`.
+   - **Port**: `8080:80` (Aplikasi diakses melalui `http://localhost:8080`).
+   - **Konfigurasi**: [docker/nginx/default.conf](file:///c:/laragon/www/BEAUTY_CRM/docker/nginx/default.conf) meneruskan request PHP ke `app:9000`.
+
+3. **`minio` & `minio-setup` (S3 Object Storage)**:
+   - **Image**: `minio/minio:latest`.
+   - **Port**: `9010:9000` (API S3 Endpoint) dan `9011:9001` (Web Dashboard MinIO).
+   - **Kredensial**: Root user `minioadmin` / password `minioadmin`.
+   - **Setup Job**: `minio-setup` menjalankan `minio/mc` otomatis untuk membuat bucket `beauty-crm` dan mengatur permission bucket menjadi `public`.
+
+4. **Script Setup Otomatis ([docker/setup.sh](file:///c:/laragon/www/BEAUTY_CRM/docker/setup.sh))**:
+   - Menyalin `.env.docker` menjadi `.env`.
+   - Membangun kontainer (`docker-compose up -d --build`).
+   - Menjalankan migrasi database (`php artisan migrate --force`).
+   - Membuat link storage dan membersihkan cache optimasi.
 
 ---
 
-### 🔐 Module: Authentication
+## 3. Arsitektur Role-Based Access Control (RBAC)
 
-#### Tujuan
-Mengelola autentikasi user (login/logout) dengan pengecekan status akun aktif.
+Sistem menggunakan **Spatie Laravel Permission 6.x** dengan definisi peran dan izin master pada [RoleSeeder.php](file:///c:/laragon/www/BEAUTY_CRM/database/seeders/RoleSeeder.php):
+
+```mermaid
+graph LR
+    subgraph "Peran (Roles)"
+        Admin[🛡️ Admin]
+        Sales[💼 Sales]
+        CS[🎧 Customer Service]
+        Manager[📊 Manager]
+    end
+
+    subgraph "Permissions Matrix"
+        P1[manage users]
+        P2[manage leads]
+        P3[manage deals]
+        P4[manage customers]
+        P5[manage activities]
+        P6[manage pipeline]
+        P7[manage sources]
+        P8[view reports]
+        P9[view audit logs]
+        P10[import export data]
+        P11[manage settings]
+    end
+
+    Admin --> P1 & P2 & P3 & P4 & P5 & P6 & P7 & P8 & P9 & P10 & P11
+    Sales --> P2 & P3 & P5
+    CS --> P4 & P5
+    Manager --> P6 & P8 & P9
+```
+
+### Pemetaan Role & Hak Akses
+
+| Role | Daftar Hak Akses (*Permissions*) | Landing Route | Prefix Rute |
+|---|---|---|---|
+| **Admin** | *All Permissions* (11 permissions) | `/admin/dashboard` | `routes/admin.php` (`/admin/*`) |
+| **Sales** | `manage leads`, `manage deals`, `manage activities` | `/sales/dashboard` | `routes/sales.php` (`/sales/*`) |
+| **Customer Service** | `manage customers`, `manage activities` | `/cs/dashboard` | `routes/cs.php` (`/cs/*`) |
+| **Manager** | `view reports`, `view audit logs`, `manage pipeline` | `/manager/dashboard` | `routes/manager.php` (`/manager/*`) |
+
+---
+
+## 4. Analisis Mendalam Per Modul
+
+---
+
+### 🔐 1. Module: Autentikasi & Profil Pengguna
 
 #### Alur Bisnis
-1. User mengakses `/login` → form login ditampilkan
-2. Submit credentials → validasi email & password
-3. Jika valid → cek `is_active` → jika aktif, redirect ke `/dashboard`
-4. `/dashboard` melakukan redirect berdasarkan role user
-5. Jika user di-deactivate di tengah session → `CheckActiveUser` middleware akan force logout
-
-#### Route
-
-| Method | URI | Controller | Name |
-|--------|-----|-----------|------|
-| GET | `/` | Redirect → login | - |
-| GET | `/login` | [LoginController::showLoginForm](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/Auth/LoginController.php#L11-L17) | `login` |
-| POST | `/login` | [LoginController::login](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/Auth/LoginController.php#L19-L42) | - |
-| POST | `/logout` | [LoginController::logout](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/Auth/LoginController.php#L44-L50) | `logout` |
-
-#### Request Validation
-Inline di controller: `email` → required|email, `password` → required
-
-#### Middleware
-- [CheckActiveUser](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Middleware/CheckActiveUser.php) — memaksa logout jika `is_active = false`
-
-#### Response
-- Redirect ke `/dashboard` (yang kemudian redirect ke dashboard sesuai role)
-- Atau error message jika login gagal / akun nonaktif
+1. User masuk ke form `/login` ([LoginController.php](file:///c:/laragon/www/BEAUTY_CRM/app/Http/Controllers/Auth/LoginController.php)).
+2. Sistem memverifikasi kredensial serta kolom `is_active`. Jika user dinonaktifkan oleh Admin, sistem langsung menolak login dengan alert kesalahan.
+3. Setelah login sukses, endpoint `/dashboard` ([web.php](file:///c:/laragon/www/BEAUTY_CRM/routes/web.php)) mengecek role user via helper `isAdmin()`, `isSales()`, `isCS()`, `isManager()` di [User.php](file:///c:/laragon/www/BEAUTY_CRM/app/Models/User.php) dan mengarahkan ke dashboard yang sesuai.
+4. Setiap request diproteksi oleh middleware [CheckActiveUser.php](file:///c:/laragon/www/BEAUTY_CRM/app/Http/Middleware/CheckActiveUser.php). Jika user dinonaktifkan di tengah sesi aktif, sesi akan otomatis dimatikan (*force logout*).
+5. Pada halaman `/profile` ([ProfileController.php](file:///c:/laragon/www/BEAUTY_CRM/app/Http/Controllers/ProfileController.php)), user dapat mengunggah avatar. File disimpan ke storage S3 MinIO (`avatars/`), dan file lama otomatis dihapus dari storage.
 
 ---
 
-### 👤 Module: Profile
+### 🛡️ 2. Module: Admin Panel & Master Data
 
-#### Tujuan
-Memungkinkan user mengedit profil dan mengunggah avatar.
-
-#### Route
-
-| Method | URI | Controller | Name |
-|--------|-----|-----------|------|
-| GET | `/profile` | [ProfileController::edit](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/ProfileController.php#L12-L17) | `profile.edit` |
-| PUT | `/profile` | [ProfileController::update](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/ProfileController.php#L19-L48) | `profile.update` |
-
-#### Request Validation (inline)
-- `name`: required, string, max:255
-- `email`: required, email, unique (kecuali diri sendiri)
-- `phone`: nullable, max:20
-- `avatar`: nullable, image (jpeg/png/jpg/gif), max:2048
-
-#### Tabel: `users`
+#### Fitur & Kemampuan
+* **User & Target Management**:
+  - CRUD seluruh akun user staf.
+  - Penentuan role dan penetapan target: `monthly_target` (jumlah member baru) dan `revenue_target` (nominal pendapatan).
+  - Toggle aktif/nonaktif user via AJAX ([UserController.php](file:///c:/laragon/www/BEAUTY_CRM/app/Http/Controllers/Admin/UserController.php)). Proteksi: Admin tidak dapat menonaktifkan atau menghapus akunnya sendiri.
+* **Lead Sources Management**:
+  - Master data sumber prospek (WhatsApp, Instagram, Walk-in, Referral, Website, dll) dengan custom warna dan icon ([LeadSourceController.php](file:///c:/laragon/www/BEAUTY_CRM/app/Http/Controllers/Admin/LeadSourceController.php)).
+* **Pipeline Stages Management**:
+  - CRUD tahapan deal dengan pengaturan persentase probabilitas (*probability 0-100%*).
+  - Fitur **Drag & Drop Reorder** tahapan pipeline menggunakan SortableJS via endpoint AJAX `PATCH /admin/pipeline-stages/reorder`.
+* **Lost Reasons Management**:
+  - Master data alasan deal gagal/lost (Harga terlalu mahal, Kompetitor, Tidak merespons, dll).
+* **Audit Trail**:
+  - Melihat log seluruh mutasi data dalam sistem dengan paginasi, filter user/action, dan format JSON diff ([AuditLogController.php](file:///c:/laragon/www/BEAUTY_CRM/app/Http/Controllers/Admin/AuditLogController.php)).
+* **General Settings**:
+  - Konfigurasi data profil perusahaan dan toggle notifikasi sistem ([SettingsController.php](file:///c:/laragon/www/BEAUTY_CRM/app/Http/Controllers/Admin/SettingsController.php)).
 
 ---
 
-### 🛡️ Module: Admin — User Management
-
-#### Tujuan
-Admin mengelola semua user: buat, lihat, edit, hapus, toggle aktif.
+### 💼 3. Module: Sales — Lead-to-Deal Pipeline & Multi-Channel Blast
 
 #### Alur Bisnis
-1. Admin melihat daftar user dengan filter (search, role, status)
-2. Admin membuat user baru dengan role assignment
-3. Admin mengedit user (Manager tidak bisa diedit, hanya di-toggle)
-4. Admin men-delete user (tidak bisa delete diri sendiri atau Manager)
-5. Admin toggle aktif/nonaktif user via AJAX
+```mermaid
+flowchart TD
+    A[Lead Masuk / Di-assign] --> B[Sales Kontak Prospek]
+    B --> C[Status: Contacted]
+    C --> D{Kualifikasi Prospek}
+    D -->|Qualified| E[Convert to Deal]
+    D -->|Unqualified / Not Fit| F[Catat Alasan & Arsip]
+    E --> G[Deal Masuk Pipeline Stage 1]
+    G --> H[Progres Negosiasi: Drag & Drop Kanban]
+    H --> I{Keputusan Akhir}
+    I -->|Deal WON| J[Tutup Deal: Status Won]
+    J --> K[Otomatis Buat Data Customer Baru]
+    J --> L[Kirim Notifikasi Deal Won ke Admin & Manager]
+    I -->|Deal LOST| M[Tutup Deal: Status Lost]
+    M --> N[Wajib Isi Lost Reason & Catatan]
+```
 
-#### Route
-
-| Method | URI | Controller | Name |
-|--------|-----|-----------|------|
-| GET | `/admin/users` | [UserController::index](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/Admin/UserController.php#L15-L33) | `admin.users.index` |
-| GET | `/admin/users/create` | [UserController::create](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/Admin/UserController.php#L35-L39) | `admin.users.create` |
-| POST | `/admin/users` | [UserController::store](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/Admin/UserController.php#L41-L58) | `admin.users.store` |
-| GET | `/admin/users/{user}` | [UserController::show](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/Admin/UserController.php#L60-L68) | `admin.users.show` |
-| GET | `/admin/users/{user}/edit` | [UserController::edit](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/Admin/UserController.php#L70-L81) | `admin.users.edit` |
-| PUT | `/admin/users/{user}` | [UserController::update](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/Admin/UserController.php#L83-L114) | `admin.users.update` |
-| DELETE | `/admin/users/{user}` | [UserController::destroy](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/Admin/UserController.php#L116-L130) | `admin.users.destroy` |
-| PATCH | `/admin/users/{user}/toggle` | [UserController::toggle](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/Admin/UserController.php#L132-L143) | `admin.users.toggle` |
-
-#### Request Validation
-[UserRequest](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Requests/Admin/UserRequest.php):
-- `name`: required, string, max:255
-- `email`: required, email, unique
-- `phone`: nullable, max:20
-- `role`: required, exists:roles
-- `password`: required (create) / nullable (update), confirmed, min:8
-- `avatar`: nullable, image, max:2048
-
-#### Model & Tabel
-- [User](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Models/User.php) → `users`
-- Spatie Role model → `roles`, `model_has_roles`
+#### Logika Kunci Service Layer ([DealService.php](file:///c:/laragon/www/BEAUTY_CRM/app/Services/DealService.php))
+1. **`createFromLead(Lead $lead, array $data)`**:
+   - Dieksekusi dalam `DB::transaction`.
+   - Membuat Deal baru dan secara otomatis mengubah status Lead dari `qualified` menjadi `converted`.
+2. **`moveToStage(Deal $deal, int $stageId)`**:
+   - Menangani pergeseran posisi card pada Kanban Board interaktif. Menghitung ulang total nilai dan jumlah deal di setiap kolom secara instan.
+3. **`closeWon(Deal $deal, ?string $productName, ?float $value)`**:
+   - Mengubah status deal menjadi `won`, mencatat `closed_at`, produk yang terjual, dan nilai closing.
+   - Memeriksa apakah `Customer` sudah ada dari `lead_id` terkait. Jika belum ada, sistem membuat entitas `Customer` baru secara otomatis berstatus `active`.
+   - Mengirim notifikasi database [DealWonNotification.php](file:///c:/laragon/www/BEAUTY_CRM/app/Notifications/DealWonNotification.php) ke semua Admin dan Manager.
+4. **`blastMessage(array $dealIds, string $channel, string $message, $image)`**:
+   - Mengirim pesan broadcast ke prospek terkait deal terpilih via WhatsApp (API Fonnte) atau Email, menyertakan gambar attachment (CID).
 
 ---
 
-### 📋 Module: Admin — Lead Management
+### 🎧 4. Module: Customer Service (CS) & Relationship Management
 
-#### Tujuan
-Admin mengelola semua leads: CRUD, filtering, assignment ke Sales, notifikasi.
-
-#### Alur Bisnis
-1. Admin melihat daftar leads dengan filter (search, source, status, qualification, assigned_to, date range)
-2. Admin membuat lead baru → otomatis notifikasi ke Sales yang di-assign
-3. Admin update lead → jika `assigned_to` berubah, notifikasi ke user baru
-4. Admin hapus lead (soft delete)
-
-#### Route
-
-| Method | URI | Name |
-|--------|-----|------|
-| Resource CRUD | `/admin/leads` | `admin.leads.*` |
-| POST | `/admin/leads/import` | `admin.leads.import` |
-| GET | `/admin/leads/export` | `admin.leads.export` |
-| GET | `/admin/leads/import/template` | `admin.leads.import.template` |
-
-#### Controller
-[Admin\LeadController](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/Admin/LeadController.php)
-
-#### Request Validation
-[LeadRequest](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Requests/Admin/LeadRequest.php):
-- `name`: required, max:255
-- `phone`: required, max:20
-- `email`: nullable, email
-- `lead_source_id`: required, exists
-- `status`: required, in:new/contacted/qualified/converted/closed
-- `qualification`: nullable, in:qualified/unqualified/not_fit
-
-#### Notification
-- [LeadAssignedNotification](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Notifications/LeadAssignedNotification.php) → via `database` channel
-
-#### Tabel: `leads`, `lead_sources`, `users`
+#### Alur Bisnis & Layanan Purna Jual
+1. **Customer Database & Segmentation**:
+   - CS mengelola basis data pelanggan yang bersumber dari Deal Won maupun input manual ([CustomerController.php](file:///c:/laragon/www/BEAUTY_CRM/app/Http/Controllers/CS/CustomerController.php)).
+   - Menampilkan total akumulasi transaksi belanja pelanggan (*total spend* yang dihitung dari relasi deal won).
+   - Pengelompokan tagging fleksibel (*JSON array: VIP, Regular, Treatment Jerawat, dll*).
+2. **Multi-Channel Blast Pesan Massal ([CustomerService::blastMessage](file:///c:/laragon/www/BEAUTY_CRM/app/Services/CustomerService.php#L110-L196))**:
+   - **WhatsApp Blast**: Mengonversi teks HTML menjadi format WhatsApp Markdown (*bold*, _italic_, ~strike~) dan mengirim via cURL ke Fonnte API (`https://api.fonnte.com/send`) menggunakan `CURLFile` untuk upload gambar promosi/konsultasi.
+   - **Email Blast**: Mengirim email promosi via [BlastMessageMail.php](file:///c:/laragon/www/BEAUTY_CRM/app/Mail/BlastMessageMail.php) dengan sistem *Content-ID (CID) inline embedding* gambar.
+   - Setiap pengiriman blast otomatis tercatat ke dalam tabel `activities` sebagai riwayat interaksi pelanggan.
+3. **Follow-Up Scheduling & Overdue Management**:
+   - Menjadwalkan pengingat follow-up pasca-treatment atau jadwal kunjungan ulang.
+   - Filter otomatis untuk membedakan follow-up **Hari Ini**, **Akan Datang**, dan **Overdue** (melewati jatuh tempo).
+   - Tombol penyelesaian follow-up satu klik (*mark as completed*).
 
 ---
 
-### 💰 Module: Sales — Lead & Deal Pipeline
+### 📊 5. Module: Manager — Business Intelligence, Analytics & Member Forecasting
 
-#### Tujuan
-Sales mengelola leads yang di-assign, kualifikasi, konversi ke deal, dan mengelola pipeline deal.
+Modul Manager dikuasakan oleh [ReportService.php](file:///c:/laragon/www/BEAUTY_CRM/app/Services/ReportService.php) yang memisahkan seluruh kalkulasi statistik dari controller.
 
-#### Alur Bisnis Lead
-1. Sales melihat leads miliknya (filtered by `assigned_to = auth()->id()`)
-2. Sales membuat lead baru → otomatis `assigned_to` dan `created_by` = diri sendiri
-3. Sales melakukan aktivitas pada lead → status `new` otomatis berubah ke `contacted`
-4. Sales melakukan qualify lead → status berubah
-5. Sales convert lead yang sudah `qualified` → redirect ke form create deal
+```mermaid
+graph TD
+    subgraph "Manager Analytics Center"
+        DASH[Manager Dashboard] --> KPI[KPI: Deals, Revenue, Top Product, Target %]
+        DASH --> FT[Funnel Analisis: Lead -> Qualified -> Deal -> Won]
+        DASH --> LB[Sales Leaderboard: Revenue & Member Acquisition]
+        
+        REP[Reports Center] --> R1[Sales Performance: Win Rate & Avg Close Time]
+        REP --> R2[Revenue Trends: 12 Bulan Historis]
+        REP --> R3[Lost Reasons Breakdown]
+        REP --> R4[Lead Sources ROI & Conversion]
+        REP --> R5[Team Activity Log]
+        
+        FC[Forecast Engine] --> WV[Weighted Pipeline Calculation]
+        FC --> PROJ[Proyeksi Pendapatan & Member Baru Masa Depan]
+    end
+```
 
-#### Alur Bisnis Deal
-1. Sales membuat deal dari qualified lead → lead status = `converted`
-2. Deal masuk ke pipeline stage pertama
-3. Sales memindahkan deal antar stage (via `moveStage` AJAX atau `moveToNextStage`)
-4. Sales close deal sebagai **Won** → Customer otomatis dibuat dari data Lead
-5. Sales close deal sebagai **Lost** → wajib isi `lost_reason_id` dan `lost_notes`
-6. Deal Won → Notifikasi dikirim ke semua Admin & Manager
-
-#### Route Sales
-
-| Method | URI | Name |
-|--------|-----|------|
-| GET | `/sales/leads` | `sales.leads.index` |
-| GET/POST | `/sales/leads/create`, `/sales/leads` | `sales.leads.create/store` |
-| GET | `/sales/leads/{lead}` | `sales.leads.show` |
-| POST | `/sales/leads/{lead}/qualify` | `sales.leads.qualify` |
-| POST | `/sales/leads/{lead}/convert` | `sales.leads.convert` |
-| GET | `/sales/pipeline` | `sales.deals.pipeline` |
-| GET | `/sales/deals` | `sales.deals.index` |
-| GET | `/sales/deals/create/{lead}` | `sales.deals.create` |
-| POST | `/sales/deals` | `sales.deals.store` |
-| GET | `/sales/deals/{deal}` | `sales.deals.show` |
-| PUT | `/sales/deals/{deal}` | `sales.deals.update` |
-| POST | `/sales/deals/{deal}/move-stage` | `sales.deals.move-stage` |
-| POST | `/sales/deals/{deal}/close` | `sales.deals.close` |
-
-#### Service
-[DealService](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Services/DealService.php):
-- `createFromLead()` — DB transaction: buat deal + update lead status ke `converted`
-- `moveToNextStage()` — pindah ke stage berikutnya
-- `moveToStage()` — pindah ke stage tertentu (drag & drop)
-- `closeWon()` — DB transaction: update deal status + buat Customer dari Lead
-- `closeLost()` — update deal + set lost reason
-
-#### Request Validation
-- [StoreDealRequest](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Requests/Sales/StoreDealRequest.php)
-- [CloseDealRequest](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Requests/Sales/CloseDealRequest.php)
-- [QualifyLeadRequest](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Requests/Sales/QualifyLeadRequest.php)
-- [StoreLeadRequest](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Requests/Sales/StoreLeadRequest.php)
+#### Komponen Utama Laporan Manager:
+1. **Sales Performance Report**:
+   - Analisis mendalam kinerja tiap salesperson: Total leads, jumlah deal won vs lost, rasio konversi (*win rate*), dan rata-rata durasi penutupan transaksi (*average days to close*).
+2. **Member Acquisition & Revenue Target**:
+   - Perbandingan target bulanan (`monthly_target` & `revenue_target`) terhadap realisasi pencapaian (*target achievement percentage*).
+3. **Pipeline & Revenue Forecasting Engine ([ForecastController.php](file:///c:/laragon/www/BEAUTY_CRM/app/Http/Controllers/Manager/ForecastController.php))**:
+   - Mengombinasikan data rata-rata nilai transaksi historis (*average deal value*) dengan probabilitas stage pipeline untuk menghasilkan nilai terbobot (*weighted forecast value*):
+     $$\text{Forecast Value} = \sum (\text{Average Deal Value} \times \text{Stage Probability})$$
+4. **Laporan Sumber Prospek & Alasan Kalah**:
+   - Diagram distribusi efektivitas channel pemasaran (*Lead Sources*) dan identifikasi hambatan penjualan (*Lost Reasons breakdown*).
+5. **Ekspor Data**:
+   - Ekspor laporan kinerja ke format `.xlsx` atau `.csv` via [SalesPerformanceExport.php](file:///c:/laragon/www/BEAUTY_CRM/app/Exports/SalesPerformanceExport.php) dan [RevenueExport.php](file:///c:/laragon/www/BEAUTY_CRM/app/Exports/RevenueExport.php).
 
 ---
 
-### 📞 Module: Sales — Activity & Follow-Up
+## 5. Entity Relationship Diagram (ERD) Aktual
 
-#### Tujuan
-Sales mencatat aktivitas (call, WhatsApp, email, meeting, note) pada lead/deal dan menjadwalkan follow-up.
-
-#### Route
-
-| Method | URI | Name |
-|--------|-----|------|
-| POST | `/sales/activities` | `sales.activities.store` |
-| PUT | `/sales/activities/{activity}` | `sales.activities.update` |
-| DELETE | `/sales/activities/{activity}` | `sales.activities.destroy` |
-| POST | `/sales/activities/{activity}/complete-followup` | `sales.activities.complete-followup` |
-
-#### Controller
-[Sales\ActivityController](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/Sales/ActivityController.php)
-
-#### Request Validation
-[StoreActivityRequest](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Requests/Sales/StoreActivityRequest.php):
-- `activitable_type`: required, in:lead,deal
-- `type`: required, in:call,whatsapp,email,meeting,note,other
-- `follow_up_date`: nullable, date, after_or_equal:today
-
-#### Logika Bisnis Penting
-- Saat aktivitas dicatat pada Lead ber-status `new` → status otomatis berubah ke `contacted`
-- Jika `follow_up_date` diisi → `follow_up_status` otomatis = `pending`
-
-#### Tabel: `activities` (polymorphic: `activitable_type` + `activitable_id`)
-
----
-
-### 🎧 Module: Customer Service (CS)
-
-#### Tujuan
-CS mengelola customer, tiket layanan, follow-up, dan aktivitas pada customer/tiket.
-
-#### Alur Bisnis
-1. CS melihat dashboard: total customer, open tickets, today's follow-ups, overdue
-2. CS membuat/mengedit customer (manual atau dari lead yang diconvert)
-3. CS membuat service ticket untuk customer
-4. CS mengelola status ticket: `open` → `in_progress` → `resolved` → `closed` (state machine)
-5. CS menjadwalkan dan menyelesaikan follow-up
-
-#### Route CS
-
-| Method | URI | Name |
-|--------|-----|------|
-| GET | `/cs/dashboard` | `cs.dashboard` |
-| GET/POST | `/cs/customers/*` | `cs.customers.*` |
-| Resource | `/cs/tickets` | `cs.tickets.*` |
-| POST | `/cs/tickets/{ticket}/update-status` | `cs.tickets.update-status` |
-| GET/POST | `/cs/follow-ups` | `cs.follow-ups.*` |
-| POST | `/cs/activities` | `cs.activities.store` |
-
-#### Service
-[CustomerService](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Services/CustomerService.php):
-- Dashboard data aggregation
-- CRUD customer & ticket
-- **Ticket Status State Machine** (valid transitions):
-  ```
-  open → in_progress
-  in_progress → resolved | open
-  resolved → closed | in_progress
-  closed → open
-  ```
-- Follow-up management (pending, overdue, completed)
-
----
-
-### 📊 Module: Manager — Reports & Analytics
-
-#### Tujuan
-Manager melihat laporan performa tim sales, revenue, pipeline, forecast, dan audit logs.
-
-#### Route Manager
-
-| Method | URI | Name |
-|--------|-----|------|
-| GET | `/manager/dashboard` | `manager.dashboard` |
-| GET | `/manager/pipeline` | `manager.pipeline.index` |
-| GET | `/manager/pipeline/data` | `manager.pipeline.data` (JSON) |
-| GET | `/manager/reports` | `manager.reports.index` |
-| GET | `/manager/reports/sales-performance` | `manager.reports.sales-performance` |
-| GET | `/manager/reports/revenue` | `manager.reports.revenue` |
-| GET | `/manager/reports/lost-reasons` | `manager.reports.lost-reasons` |
-| GET | `/manager/reports/lead-sources` | `manager.reports.lead-sources` |
-| GET | `/manager/reports/pipeline-analysis` | `manager.reports.pipeline-analysis` |
-| GET | `/manager/reports/team-activity` | `manager.reports.team-activity` |
-| GET | `/manager/reports/export` | `manager.reports.export` |
-| GET | `/manager/team` | `manager.team.index` |
-| GET | `/manager/team/{user}` | `manager.team.show` |
-| GET | `/manager/forecast` | `manager.forecast.index` |
-| GET | `/manager/audit-logs` | `manager.audit-logs.index` |
-
-#### Service
-[ReportService](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Services/ReportService.php) (497 LOC) — service terbesar:
-- `getManagerDashboard()` — KPI, revenue trend, funnel, sales comparison
-- `getSalesPerformance()` — leads, deals, win rate, avg close time per sales
-- `getRevenueReport()` — monthly revenue 12 bulan
-- `getLostReasons()` — analisis alasan deal kalah
-- `getLeadSources()` — analisis efektivitas sumber lead
-- `getPipelineData()` — pipeline board data
-- `getTeamLeaderboard()` — ranking tim sales
-- `getTeamMemberDetail()` — detail performa individual
-- `getForecastData()` — actual vs projected revenue (weighted value)
-- Period filtering: `today`, `this_week`, `this_month`, `this_year`, `custom`
-
----
-
-### 🔧 Module: Admin — Settings & Master Data
-
-#### Settings
-[SettingsController](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/Admin/SettingsController.php):
-- Baca/tulis konfigurasi ke `.env` file
-- Field: company_name, company_email, company_phone, company_address, notify_new_lead, notify_won_deal
-
-#### Lead Sources
-[LeadSourceController](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/Admin/LeadSourceController.php):
-- CRUD + toggle active (AJAX)
-- Tidak bisa hapus jika masih memiliki leads terkait
-
-#### Pipeline Stages
-[PipelineStageController](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/Admin/PipelineStageController.php):
-- CRUD + reorder (drag & drop via AJAX)
-- Tidak bisa hapus jika masih memiliki deal terkait
-
-#### Lost Reasons
-[LostReasonController](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/Admin/LostReasonController.php):
-- CRUD, tidak bisa hapus jika digunakan deal
-
----
-
-### 📥 Module: Import/Export
-
-#### Controller
-[ImportExportController](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/Admin/ImportExportController.php)
-
-#### Service
-[ImportExportService](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Services/ImportExportService.php)
-
-#### Import
-- [LeadImport](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Imports/LeadImport.php) — menggunakan `Maatwebsite\Excel`
-- Validasi: name (required), phone (required), email (nullable|email)
-- Batch insert 100, chunk reading 500
-- Lead source matching by name
-- SkipsOnFailure → laporkan error per baris
-
-#### Export
-- [LeadExport](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Exports/LeadExport.php) — export leads dengan filter
-- [SalesPerformanceExport](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Exports/SalesPerformanceExport.php)
-- [RevenueExport](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Exports/RevenueExport.php)
-
----
-
-### 📝 Module: Audit Logging
-
-#### Observer
-[AuditObserver](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Observers/AuditObserver.php):
-- Otomatis mencatat `created`, `updated`, `deleted` events
-- Filter field sensitif: password, remember_token, timestamps
-- Menyimpan IP address dan user agent
-
-#### Registered pada
-[AuditServiceProvider](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Observers/AuditServiceProvider.php):
-Model yang di-observe: `Lead`, `Deal`, `Customer`, `User`, `ServiceTicket`
-
-#### Tabel: `audit_logs` (polymorphic: `auditable_type` + `auditable_id`)
-
----
-
-## 4. Entity Relationship Diagram (ERD)
+Berikut struktur relasi basis data aktual berdasarkan seluruh file migrasi pada direktori [database/migrations/](file:///c:/laragon/www/BEAUTY_CRM/database/migrations/):
 
 ```mermaid
 erDiagram
@@ -415,8 +265,12 @@ erDiagram
         string phone
         string avatar
         boolean is_active
+        int monthly_target "Target Member Baru"
+        decimal revenue_target "Target Omset"
         string password
         timestamp email_verified_at
+        timestamp created_at
+        timestamp updated_at
         timestamp deleted_at
     }
 
@@ -427,6 +281,8 @@ erDiagram
         string color
         string description
         boolean is_active
+        timestamp created_at
+        timestamp updated_at
         timestamp deleted_at
     }
 
@@ -435,7 +291,9 @@ erDiagram
         string name
         string color
         int order
-        int probability
+        int probability "0 - 100%"
+        timestamp created_at
+        timestamp updated_at
         timestamp deleted_at
     }
 
@@ -444,6 +302,8 @@ erDiagram
         string name
         string description
         boolean is_active
+        timestamp created_at
+        timestamp updated_at
     }
 
     leads {
@@ -452,12 +312,14 @@ erDiagram
         string email
         string phone
         text address
-        bigint lead_source_id FK
-        bigint assigned_to FK
+        bigint lead_source_id FK "nullable"
+        bigint assigned_to FK "User"
         enum status "new|contacted|qualified|converted|closed"
         enum qualification "qualified|unqualified|not_fit"
         text notes
-        bigint created_by FK
+        bigint created_by FK "User"
+        timestamp created_at
+        timestamp updated_at
         timestamp deleted_at
     }
 
@@ -465,22 +327,25 @@ erDiagram
         bigint id PK
         bigint lead_id FK
         string name
+        string product_name "nullable"
         decimal value "15,2"
         bigint pipeline_stage_id FK
         enum status "open|won|lost"
-        bigint lost_reason_id FK
+        bigint lost_reason_id FK "nullable"
         text lost_notes
         date expected_close_date
         timestamp closed_at
-        bigint assigned_to FK
-        bigint created_by FK
+        bigint assigned_to FK "User"
+        bigint created_by FK "User"
+        timestamp created_at
+        timestamp updated_at
         timestamp deleted_at
     }
 
     customers {
         bigint id PK
-        bigint lead_id FK
-        bigint user_id FK "CS PIC"
+        bigint lead_id FK "nullable"
+        bigint user_id FK "CS PIC (nullable)"
         string name
         string email
         string phone
@@ -488,13 +353,15 @@ erDiagram
         enum status "active|inactive"
         json tags
         text notes
+        timestamp created_at
+        timestamp updated_at
         timestamp deleted_at
     }
 
     activities {
         bigint id PK
         bigint user_id FK
-        string activitable_type
+        string activitable_type "Polymorphic (Lead/Deal/Customer)"
         bigint activitable_id
         enum type "call|whatsapp|email|meeting|note|other"
         string subject
@@ -506,33 +373,24 @@ erDiagram
         enum follow_up_type "call|whatsapp|email|meeting"
         text follow_up_notes
         enum follow_up_status "pending|done|cancelled"
-        timestamp deleted_at
-    }
-
-    service_tickets {
-        bigint id PK
-        string ticket_number UK
-        bigint customer_id FK
-        bigint assigned_to FK
-        string title
-        text description
-        string category
-        enum priority "low|medium|high|urgent"
-        enum status "open|in_progress|resolved|closed"
-        json attachments
+        text notes
+        timestamp created_at
+        timestamp updated_at
         timestamp deleted_at
     }
 
     audit_logs {
         bigint id PK
-        bigint user_id FK
-        string action
-        string auditable_type
+        bigint user_id FK "nullable"
+        string action "created|updated|deleted"
+        string auditable_type "Polymorphic"
         bigint auditable_id
         json old_values
         json new_values
         string ip_address
         text user_agent
+        timestamp created_at
+        timestamp updated_at
     }
 
     notifications {
@@ -542,6 +400,8 @@ erDiagram
         bigint notifiable_id
         text data
         timestamp read_at
+        timestamp created_at
+        timestamp updated_at
     }
 
     roles {
@@ -560,9 +420,8 @@ erDiagram
     users ||--o{ leads : "created_by"
     users ||--o{ deals : "assigned_to"
     users ||--o{ deals : "created_by"
-    users ||--o{ customers : "user_id (CS PIC)"
+    users ||--o{ customers : "user_id"
     users ||--o{ activities : "user_id"
-    users ||--o{ service_tickets : "assigned_to"
     users ||--o{ audit_logs : "user_id"
 
     lead_sources ||--o{ leads : "lead_source_id"
@@ -572,580 +431,237 @@ erDiagram
     leads ||--o{ deals : "lead_id"
     leads ||--o| customers : "lead_id"
 
-    customers ||--o{ service_tickets : "customer_id"
-
     roles ||--o{ model_has_roles : "role_id"
 ```
 
 ---
 
-## 5. Diagram Alur Request (Request Flow)
+## 6. Diagram Alur & Logika Sistem
+
+### A. Diagram Request Lifecycle & Security Middleware
 
 ```mermaid
 flowchart LR
-    A[Browser] --> B[Route]
-    B --> C{Middleware}
-    C -->|auth| D{active.user}
-    D -->|active| E{role check}
-    E -->|authorized| F[Controller]
-    F --> G{FormRequest?}
-    G -->|yes| H[Validation]
-    H -->|pass| I[Service Layer]
-    H -->|fail| J[Redirect back with errors]
-    G -->|no| I
-    I --> K[Model / Eloquent]
-    K --> L[(Database)]
-    I --> M[Observer]
-    M --> N[AuditLog]
-    F --> O[View / JSON Response]
-    D -->|inactive| P[Force Logout]
-    E -->|unauthorized| Q[403 Forbidden]
+    A[Browser Request] --> B[Nginx Reverse Proxy :8080]
+    B --> C[PHP-FPM :9000]
+    C --> D{auth middleware}
+    D -->|Belum Login| L[Redirect /login]
+    D -->|Sudah Login| E{active.user middleware}
+    E -->|is_active == false| F[Force Logout & Error Message]
+    E -->|is_active == true| G{role authorization}
+    G -->|Unauthorized| H[403 Forbidden]
+    G -->|Authorized| I[Controller]
+    I --> J[FormRequest Validation]
+    J -->|Valid| K[Service Layer Logic]
+    K --> M[Eloquent Model]
+    M --> DB[(MySQL Database)]
+    M --> S3[(MinIO Object Storage)]
+    M --> OBS[AuditObserver]
+    OBS --> DB
+    K --> N[Response View / JSON]
 ```
 
----
-
-## 6. Diagram Sequence: Sales Close Deal as Won
+### B. Diagram Sequence: Multi-Channel Blast Messaging
 
 ```mermaid
 sequenceDiagram
-    actor Sales
-    participant Browser
-    participant Router
-    participant DealController
-    participant CloseDealRequest
-    participant DealService
-    participant Deal
-    participant Lead
-    participant Customer
-    participant Notification
-    participant DB
+    actor CS as CS / Sales User
+    participant Web as Web Interface
+    participant Ctrl as CustomerController / DealController
+    participant Svc as CustomerService / DealService
+    participant Fonnte as Fonnte WhatsApp API
+    participant Mailer as SMTP Mailer (Gmail)
+    participant MinIO as Local / S3 Storage
+    participant DB as MySQL DB
 
-    Sales->>Browser: POST /sales/deals/{deal}/close (outcome=won)
-    Browser->>Router: HTTP POST
-    Router->>DealController: close(CloseDealRequest, Deal)
-    DealController->>CloseDealRequest: validate()
-    CloseDealRequest-->>DealController: validated data
-
-    DealController->>DealController: Check deal.assigned_to === auth()->id()
-    DealController->>DealController: Check deal.status === 'open'
-
-    DealController->>DealService: closeWon(deal)
-    DealService->>DB: BEGIN TRANSACTION
-
-    DealService->>Deal: update(status='won', closed_at=now())
-    Deal-->>DealService: updated
-
-    DealService->>Lead: find(deal.lead_id)
-    DealService->>Customer: Check existing customer by lead_id
-    alt Customer not exists
-        DealService->>Customer: create(from lead data)
-        Customer-->>DealService: new customer
+    CS->>Web: Pilih Target Customer/Deals, Isi Pesan, Upload Gambar
+    Web->>Ctrl: POST /cs/customers/blast (channel, message, image)
+    Ctrl->>Svc: blastMessage(ids, channel, message, image)
+    
+    opt Ada Lampiran Gambar
+        Svc->>MinIO: store('uploads/blast', 'public')
+        MinIO-->>Svc: storedPath
     end
 
-    DealService->>DB: COMMIT
-    DealService-->>DealController: deal
+    alt Channel == 'whatsapp'
+        Svc->>Svc: formatMessageForWhatsApp(message) -> Markdown
+        Svc->>Fonnte: POST https://api.fonnte.com/send (CURLFile image + token)
+        Fonnte-->>Svc: Success Response
+    else Channel == 'email'
+        Svc->>Mailer: Mail::to()->send(new BlastMessageMail(message, storedPath))
+        Mailer-->>Svc: Email sent with CID embedded image
+    end
 
-    DealController->>Notification: Send DealWonNotification to Admin & Manager
-    Notification->>DB: Insert into notifications table
-
-    DealController-->>Browser: Redirect to deals.show with success
-    Browser-->>Sales: Deal Won + Customer Created
+    Svc->>DB: Activity::create() -> Log Blast Event
+    Svc-->>Ctrl: Count Sent
+    Ctrl-->>Web: Redirect back with success count
 ```
 
 ---
 
-## 7. Diagram Sequence: Lead Lifecycle (Sales Perspective)
-
-```mermaid
-sequenceDiagram
-    actor Admin
-    actor Sales
-    participant System
-
-    Admin->>System: Create Lead (assigned_to = Sales)
-    System->>Sales: 🔔 LeadAssignedNotification
-
-    Sales->>System: View Lead (status: new)
-    Sales->>System: Log Activity (call/whatsapp/etc)
-    System->>System: Auto update status: new → contacted
-
-    Sales->>System: Qualify Lead (qualified/unqualified/not_fit)
-    System->>System: Update qualification field
-
-    alt Lead is Qualified
-        Sales->>System: Convert Lead → Create Deal
-        System->>System: Lead status → converted
-        System->>System: Deal created (stage: first pipeline stage)
-
-        Sales->>System: Work on Deal (move stages)
-        
-        alt Deal Won
-            Sales->>System: Close as Won
-            System->>System: Deal status → won
-            System->>System: Customer auto-created from Lead
-            System->>Admin: 🔔 DealWonNotification
-        else Deal Lost
-            Sales->>System: Close as Lost (reason + notes)
-            System->>System: Deal status → lost
-        end
-    end
-```
-
----
-
-## 8. Diagram Komponen
+## 7. Diagram Komponen Arsitektur Sistem
 
 ```mermaid
 graph TB
-    subgraph "Presentation Layer"
-        V[Blade Views]
-        JS[JavaScript/Alpine.js]
+    subgraph "Frontend Layer"
+        BLADE[Blade Templates]
+        TAILWIND[Tailwind CSS 4.0]
+        ALPINE[Alpine.js 3.x]
+        SORTABLE[SortableJS (Kanban Drag & Drop)]
+        CHART[Chart.js (Visualisasi Metrik)]
     end
 
-    subgraph "HTTP Layer"
-        MW[Middleware<br/>auth, active.user, role]
-        R[Routes<br/>web, admin, sales, cs, manager]
-        FR[Form Requests<br/>Validation]
+    subgraph "Application Layer (Laravel 12)"
+        subgraph "Routing & Security"
+            RT_ADMIN[routes/admin.php]
+            RT_SALES[routes/sales.php]
+            RT_CS[routes/cs.php]
+            RT_MGR[routes/manager.php]
+            MW_ACTIVE[CheckActiveUser Middleware]
+            SPATIE[Spatie Role Middleware]
+        end
+
+        subgraph "Controllers"
+            CTRL_ADMIN[Admin Controllers - 11 files]
+            CTRL_SALES[Sales Controllers - 5 files]
+            CTRL_CS[CS Controllers - 4 files]
+            CTRL_MGR[Manager Controllers - 6 files]
+            CTRL_GEN[Profile & Notification Controllers]
+        end
+
+        subgraph "Service Layer"
+            SVC_DEAL[DealService]
+            SVC_CUST[CustomerService]
+            SVC_REP[ReportService]
+            SVC_IMP[ImportExportService]
+        end
+
+        subgraph "Background & Observers"
+            OBS_AUDIT[AuditObserver]
+            PROV_AUDIT[AuditServiceProvider]
+            NOTIF_DEAL[DealWonNotification]
+            NOTIF_LEAD[LeadAssignedNotification]
+            MAIL_BLAST[BlastMessageMail]
+        end
     end
 
-    subgraph "Controller Layer"
-        AC[Admin Controllers<br/>11 controllers]
-        SC[Sales Controllers<br/>5 controllers]
-        CC[CS Controllers<br/>5 controllers]
-        MC[Manager Controllers<br/>6 controllers]
-        GC[General Controllers<br/>Profile, Notification, Login]
+    subgraph "Infrastructure & Storage"
+        STORAGE_S3[(MinIO S3 Bucket: beauty-crm)]
+        DB_MYSQL[(MySQL 8.0 Database)]
+        FONNTE_API[Fonnte WhatsApp Gateway]
     end
 
-    subgraph "Service Layer"
-        DS[DealService]
-        CS[CustomerService]
-        RS[ReportService]
-        IES[ImportExportService]
-    end
-
-    subgraph "Data Layer"
-        M[Eloquent Models<br/>10 models]
-        OBS[AuditObserver]
-        NT[Notifications<br/>2 types]
-        EXP[Exports<br/>3 exports]
-        IMP[Imports<br/>1 import]
-    end
-
-    subgraph "Database"
-        DB[(SQLite/MySQL<br/>15 tables)]
-    end
-
-    V --> R
-    R --> MW
-    MW --> AC & SC & CC & MC & GC
-    AC & SC & CC & MC --> FR
-    SC --> DS
-    CC --> CS
-    MC --> RS
-    AC --> IES
-    DS & CS & RS & IES --> M
-    M --> OBS
-    OBS --> DB
-    M --> DB
-    SC --> NT
+    BLADE --- ALPINE & SORTABLE & CHART
+    BLADE --> RT_ADMIN & RT_SALES & RT_CS & RT_MGR
+    RT_ADMIN & RT_SALES & RT_CS & RT_MGR --> MW_ACTIVE --> SPATIE
+    SPATIE --> CTRL_ADMIN & CTRL_SALES & CTRL_CS & CTRL_MGR & CTRL_GEN
+    CTRL_ADMIN & CTRL_SALES & CTRL_CS & CTRL_MGR --> SVC_DEAL & SVC_CUST & SVC_REP & SVC_IMP
+    SVC_DEAL & SVC_CUST & SVC_REP & SVC_IMP --> DB_MYSQL
+    SVC_CUST & SVC_DEAL --> FONNTE_API
+    SVC_CUST & SVC_DEAL --> MAIL_BLAST
+    CTRL_GEN & SVC_CUST --> STORAGE_S3
+    SVC_DEAL & SVC_CUST & SVC_REP --> OBS_AUDIT --> DB_MYSQL
 ```
 
 ---
 
-## 9. Diagram Class
-
-```mermaid
-classDiagram
-    class User {
-        +string name
-        +string email
-        +string phone
-        +string avatar
-        +bool is_active
-        +assignedLeads() HasMany
-        +assignedDeals() HasMany
-        +activities() HasMany
-        +customers() HasMany
-        +assignedTickets() HasMany
-        +auditLogs() HasMany
-        +isAdmin() bool
-        +isSales() bool
-        +isCS() bool
-        +isManager() bool
-        +getAvatarUrlAttribute() string
-    }
-
-    class Lead {
-        +string name
-        +string email
-        +string phone
-        +string status
-        +string qualification
-        +source() BelongsTo
-        +assignedUser() BelongsTo
-        +creator() BelongsTo
-        +deals() HasMany
-        +customer() HasOne
-        +activities() MorphMany
-        +scopeSearch()
-        +scopeFilterStatus()
-        +scopeFilterSource()
-        +scopeFilterQualification()
-    }
-
-    class Deal {
-        +string name
-        +decimal value
-        +string status
-        +date expected_close_date
-        +datetime closed_at
-        +lead() BelongsTo
-        +pipelineStage() BelongsTo
-        +lostReason() BelongsTo
-        +assignedUser() BelongsTo
-        +activities() MorphMany
-        +scopeOpen()
-        +scopeWon()
-        +scopeLost()
-        +getWeightedValueAttribute() float
-        +getFormattedValueAttribute() string
-    }
-
-    class Customer {
-        +string name
-        +string status
-        +json tags
-        +lead() BelongsTo
-        +csUser() BelongsTo
-        +activities() MorphMany
-        +serviceTickets() HasMany
-        +scopeActive()
-        +scopeSearch()
-    }
-
-    class Activity {
-        +string type
-        +string subject
-        +datetime activity_date
-        +date follow_up_date
-        +string follow_up_status
-        +user() BelongsTo
-        +activitable() MorphTo
-        +scopePendingFollowUps()
-        +scopeOverdueFollowUps()
-    }
-
-    class ServiceTicket {
-        +string ticket_number
-        +string title
-        +string category
-        +string priority
-        +string status
-        +customer() BelongsTo
-        +assignedUser() BelongsTo
-        +activities() MorphMany
-        +scopeOpen()
-    }
-
-    class DealService {
-        +createFromLead(Lead, array) Deal
-        +moveToNextStage(Deal) Deal
-        +moveToStage(Deal, int) Deal
-        +closeWon(Deal) Deal
-        +closeLost(Deal, int, string) Deal
-    }
-
-    class CustomerService {
-        +getDashboardData() array
-        +getCustomers(array) Paginator
-        +createCustomer(array) Customer
-        +getTickets(array) Paginator
-        +createTicket(array) ServiceTicket
-        +updateTicketStatus(ServiceTicket, string) ServiceTicket
-        +getFollowUps(array) array
-        +createFollowUp(array) Activity
-        +logActivity(array) Activity
-    }
-
-    class ReportService {
-        +getManagerDashboard() array
-        +getPipelineData() array
-        +getSalesPerformance() Collection
-        +getRevenueReport() array
-        +getLostReasons() array
-        +getLeadSources() Collection
-        +getTeamLeaderboard() Collection
-        +getTeamMemberDetail(int) array
-        +getForecastData() array
-    }
-
-    User "1" --> "*" Lead : assigned_to
-    User "1" --> "*" Deal : assigned_to
-    User "1" --> "*" Customer : user_id
-    User "1" --> "*" Activity : user_id
-    Lead "1" --> "*" Deal : lead_id
-    Lead "1" --> "0..1" Customer : lead_id
-    Deal "*" --> "1" PipelineStage : pipeline_stage_id
-    Deal "*" --> "0..1" LostReason : lost_reason_id
-    Customer "1" --> "*" ServiceTicket : customer_id
-
-    DealService ..> Deal
-    DealService ..> Lead
-    DealService ..> Customer
-    CustomerService ..> Customer
-    CustomerService ..> ServiceTicket
-    CustomerService ..> Activity
-    ReportService ..> Deal
-    ReportService ..> Lead
-    ReportService ..> User
-```
-
----
-
-## 10. Penjelasan Business Process
-
-### Lead-to-Cash Flow
-
-```mermaid
-flowchart TD
-    A[Lead Masuk] --> B{Source?}
-    B -->|Manual| C[Admin/Sales buat lead]
-    B -->|Import| D[Admin import Excel/CSV]
-    B -->|WA/IG/dll| C
-
-    C --> E[Lead Status: NEW]
-    D --> E
-
-    E --> F[Sales melakukan aktivitas<br/>call/WA/email/meeting]
-    F --> G[Lead Status: CONTACTED]
-
-    G --> H{Qualify?}
-    H -->|Qualified| I[Lead Qualification: QUALIFIED]
-    H -->|Unqualified| J[Lead Qualification: UNQUALIFIED]
-    H -->|Not Fit| K[Lead Qualification: NOT_FIT]
-
-    I --> L[Convert ke Deal]
-    L --> M[Lead Status: CONVERTED]
-    M --> N[Deal: OPEN, Stage 1]
-
-    N --> O{Pipeline Stages}
-    O --> P[Move through stages]
-    P --> Q{Close Deal?}
-
-    Q -->|Won| R[Deal: WON]
-    R --> S[Customer otomatis dibuat]
-    S --> T[CS mengelola customer]
-    T --> U[Service Tickets]
-    T --> V[Follow-up Scheduling]
-
-    Q -->|Lost| W[Deal: LOST]
-    W --> X[Lost Reason + Notes]
-```
-
-### Ticket Lifecycle
-
-```mermaid
-stateDiagram-v2
-    [*] --> Open : CS creates ticket
-    Open --> InProgress : Start working
-    InProgress --> Resolved : Issue resolved
-    InProgress --> Open : Reopen
-    Resolved --> Closed : Confirmed closed
-    Resolved --> InProgress : Reopen
-    Closed --> Open : Reopen
-```
-
----
-
-## 11. Penjelasan Struktur Folder
+## 8. Penjelasan Struktur Folder Proyek
 
 ```
 BEAUTY_CRM/
 ├── app/
-│   ├── Exports/                  # 3 export classes (Maatwebsite Excel)
-│   │   ├── LeadExport.php
-│   │   ├── RevenueExport.php
-│   │   └── SalesPerformanceExport.php
+│   ├── Exports/                      # Ekspor Excel (Maatwebsite Excel)
+│   │   ├── LeadExport.php            # Ekspor data leads
+│   │   ├── RevenueExport.php         # Ekspor laporan pendapatan
+│   │   └── SalesPerformanceExport.php# Ekspor performa sales
 │   ├── Http/
 │   │   ├── Controllers/
-│   │   │   ├── Admin/            # 11 controllers (full CRUD + settings)
-│   │   │   ├── Auth/             # LoginController
-│   │   │   ├── CS/               # 5 controllers (customer service)
-│   │   │   ├── Manager/          # 6 controllers (reports & analytics)
-│   │   │   ├── Sales/            # 5 controllers (lead-to-deal pipeline)
-│   │   │   ├── ProfileController.php
-│   │   │   └── NotificationController.php
+│   │   │   ├── Admin/                # 11 Controller (User, Lead, Master Data, Settings)
+│   │   │   ├── Auth/                 # LoginController
+│   │   │   ├── CS/                   # 4 Controller (Customer, FollowUp, Activity, Dashboard)
+│   │   │   ├── Manager/              # 6 Controller (Reports, Pipeline, Forecast, Team, Audit)
+│   │   │   ├── Sales/                # 5 Controller (Leads, Deals, Activities, Dashboard, Customer)
+│   │   │   ├── Controller.php        # Base Controller
+│   │   │   ├── NotificationController.php
+│   │   │   └── ProfileController.php # Manajemen Profil & Avatar MinIO
 │   │   ├── Middleware/
-│   │   │   └── CheckActiveUser.php
-│   │   └── Requests/
-│   │       ├── Admin/            # 6 form requests
-│   │       ├── CS/               # 6 form requests
-│   │       ├── Manager/          # 1 form request
-│   │       └── Sales/            # 7 form requests
+│   │   │   └── CheckActiveUser.php   # Proteksi status aktif akun user
+│   │   └── Requests/                 # Form Request Validation Classes (Admin, CS, Manager, Sales)
 │   ├── Imports/
-│   │   └── LeadImport.php        # Excel/CSV import with validation
-│   ├── Models/                   # 10 Eloquent models
-│   ├── Notifications/            # 2 database notifications
+│   │   └── LeadImport.php            # Impor massal Excel dengan casting numerik sel
+│   ├── Mail/
+│   │   └── BlastMessageMail.php      # Mailable broadcast email dengan CID image attachment
+│   ├── Models/                       # 9 Eloquent Model Utama
+│   │   ├── Activity.php              # Polimorfik interaksi & follow-up
+│   │   ├── AuditLog.php              # Polimorfik mutasi data audit trail
+│   │   ├── Customer.php              # Basis data customer & aggregasi belanja
+│   │   ├── Deal.php                  # Transaksi pipeline & produk
+│   │   ├── Lead.php                  # Prospek & kualifikasi
+│   │   ├── LeadSource.php            # Master sumber lead
+│   │   ├── LostReason.php            # Master alasan deal gagal
+│   │   ├── PipelineStage.php         # Master tahapan deal & bobot probabilitas
+│   │   └── User.php                  # Staf, roles, target bulanan, accessor avatar MinIO
+│   ├── Notifications/                # Database Notification (LeadAssigned, DealWon)
 │   ├── Observers/
-│   │   ├── AuditObserver.php     # Generic audit logging
-│   │   └── AuditServiceProvider.php
+│   │   └── AuditObserver.php         # Observer pencatat audit log otomatis
 │   ├── Providers/
-│   └── Services/                 # 4 service classes (business logic)
-│       ├── CustomerService.php   # 254 LOC
-│       ├── DealService.php       # 117 LOC
-│       ├── ImportExportService.php # 63 LOC
-│       └── ReportService.php     # 497 LOC
+│   │   ├── AppServiceProvider.php
+│   │   └── AuditServiceProvider.php  # Registrasi model yang di-observe audit
+│   └── Services/                     # Business Logic Layer (Clean Code)
+│       ├── CustomerService.php       # Logika Customer, Follow-up, WA & Email Blast
+│       ├── DealService.php           # Logika Pipeline, Stage Movement, Conversion, Deal Blast
+│       ├── ImportExportService.php   # Handler upload & template Excel
+│       └── ReportService.php         # Kalkulator Agregasi BI, Funnel, Forecast & Performance
+├── config/
+│   ├── filesystems.php               # Konfigurasi disk local, public, dan S3 (MinIO)
+│   └── services.php                  # Konfigurasi Fonnte WA token & provider pihak ketiga
 ├── database/
-│   ├── migrations/               # 15 migration files
-│   └── seeders/                  # 7 seeders (roles, users, master data)
+│   ├── migrations/                   # 17 Migration database
+│   └── seeders/                      # RoleSeeder, AdminUserSeeder, Master Data Seeders
+├── docker/
+│   ├── nginx/
+│   │   └── default.conf              # Konfigurasi Nginx reverse proxy
+│   ├── php/
+│   │   ├── Dockerfile                # Image build PHP 8.2-FPM + Ekstensi
+│   │   └── local.ini                 # Konfigurasi runtime PHP
+│   └── setup.sh                      # Shell script setup 1-klik lingkungan Docker
+├── docker-compose.yml                # Orkestrasi Docker (App, Nginx, MinIO, MinIO Setup)
+├── .env.docker                       # Template environment khusus container Docker
 ├── routes/
-│   ├── web.php                   # Auth + dashboard redirect
-│   ├── admin.php                 # Admin routes (role:Admin)
-│   ├── sales.php                 # Sales routes (role:Sales)
-│   ├── cs.php                    # CS routes (role:Customer Service)
-│   └── manager.php              # Manager routes (role:Manager)
-└── resources/views/              # Blade templates
+│   ├── web.php                       # Entrypoint auth, profile, redirect role
+│   ├── admin.php                     # Rute khusus Role Admin
+│   ├── sales.php                     # Rute khusus Role Sales
+│   ├── cs.php                        # Rute khusus Role Customer Service
+│   └── manager.php                   # Rute khusus Role Manager
+└── resources/
+    ├── js/                           # Script JS, Alpine.js, SortableJS, Chart.js
+    └── views/                        # Blade Templates per Role & Shared Layouts
 ```
 
 ---
 
-## 12. Analisis Keamanan
+## 9. Analisis Keamanan & Kualitas Kode
 
-### ✅ Yang Sudah Baik
+### ✅ Peningkatan yang Telah Diimplementasikan (*Fixed & Verified*)
 
-| # | Aspek | Detail |
-|---|-------|--------|
-| 1 | **RBAC** | Menggunakan Spatie Permission + middleware `role:X` per route group |
-| 2 | **Password Hashing** | Laravel automatic via `'password' => 'hashed'` cast |
-| 3 | **CSRF Protection** | Default Laravel middleware (semua POST/PUT/DELETE) |
-| 4 | **Soft Deletes** | Data tidak benar-benar terhapus (audit trail terjaga) |
-| 5 | **Form Request Validation** | 20 FormRequest classes untuk validasi input |
-| 6 | **Session Regeneration** | `$request->session()->regenerate()` setelah login |
-| 7 | **Active User Check** | Middleware `CheckActiveUser` memaksa logout user nonaktif |
-| 8 | **Ownership Check** | Sales hanya bisa akses lead/deal miliknya (`assigned_to === auth()->id()`) |
-| 9 | **Self-Delete Prevention** | Admin tidak bisa menghapus/menonaktifkan diri sendiri |
-| 10 | **Audit Logging** | Observer pattern mencatat semua CRUD + IP + user agent |
+1. **Integrasi MinIO S3 Object Storage**:
+   - Avatar pengguna dan berkas blast dikelola secara terpusat melalui disk S3/MinIO, mencegah pembebanan penyimpanan lokal container.
+2. **Koreksi Relasi Notifikasi `DealWonNotification`**:
+   - Penggunaan relasi sudah diperbaiki merujuk ke `$deal->assignedUser` secara konsisten (menggantikan bug referensi lama `$deal->sales`).
+3. **Penyempurnaan Impor Excel Numerik**:
+   - `LeadImport` telah menangani *type casting* otomatis untuk nomor telepon numerik dari file Excel agar tidak terjadi error validasi string.
+4. **Namespace Service Provider Terstandarisasi**:
+   - [AuditServiceProvider.php](file:///c:/laragon/www/BEAUTY_CRM/app/Providers/AuditServiceProvider.php) telah berada di direktori `app/Providers/` dengan namespace `App\Providers`.
+5. **Drag-and-Drop Kanban Stabil**:
+   - Endpoint pemindahan stage pipeline (`deals.move-stage` dan `pipeline-stages.reorder`) telah mendukung pembaruan asinkronus (*real-time badge & value update*) tanpa konflik parsing token class.
+6. **Multi-Channel Delivery Logging**:
+   - Pengiriman pesan broadcast (WhatsApp via Fonnte & Email CID) otomatis meng-inject catatan riwayat ke tabel `activities`.
 
-### ⚠️ Potensi Masalah
+### ⚠️ Catatan Rekomendasi Lanjutan
 
-| # | Masalah | Lokasi | Severity |
-|---|---------|--------|----------|
-| 1 | **`.env` file write dari web** | [SettingsController::update](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/Admin/SettingsController.php#L24-L62) — menulis langsung ke `.env` via `file_put_contents()`. Ini berbahaya di production (race condition, permission issue, deployment-breaking). | 🔴 **HIGH** |
-| 2 | **Default password di seeder** | [AdminUserSeeder](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/database/seeders/AdminUserSeeder.php) — password `password` untuk semua user | 🟡 **MEDIUM** |
-| 3 | **SQL LIKE injection** | Beberapa scope menggunakan `LIKE "%{$search}%"` tanpa sanitasi karakter `%` dan `_` dalam input user. Meskipun Eloquent binding melindungi dari SQL injection, karakter wildcard bisa menghasilkan query yang tidak diinginkan. | 🟡 **LOW** |
-| 4 | **Tidak ada rate limiting** | Login form tidak memiliki rate limiting eksplisit (Laravel Breeze/Fortify biasanya menyediakan ini) | 🟡 **MEDIUM** |
-| 5 | **authorize() selalu true** | Semua FormRequest mengembalikan `true` di `authorize()` — mengandalkan sepenuhnya pada middleware role | 🟢 **LOW** |
-| 6 | **DealWonNotification bug** | [DealWonNotification::toDatabase](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Notifications/DealWonNotification.php#L38) mereferensi `$this->deal->sales` yang **tidak ada** sebagai relasi di Model Deal. Relasi yang benar adalah `assignedUser`. | 🔴 **BUG** |
-| 7 | **Tidak ada authorization pada CS routes** | CS module tidak memvalidasi bahwa customer/ticket yang diakses milik CS yang login | 🟡 **MEDIUM** |
-| 8 | **Avatar upload tanpa dimensi check** | Hanya validasi mime type dan ukuran file, tidak ada pengecekan dimensi gambar | 🟢 **LOW** |
-
----
-
-## 13. Analisis Code Quality
-
-### ✅ Kelebihan
-
-| # | Aspek | Detail |
-|---|-------|--------|
-| 1 | **Separation of Concerns** | Menggunakan Service Layer (4 service) untuk business logic, bukan di controller |
-| 2 | **Form Request Classes** | 20 dedicated FormRequest classes untuk validasi |
-| 3 | **Eloquent Scopes** | Model menggunakan reusable query scopes (filterStatus, search, dll) |
-| 4 | **Accessors** | Model menggunakan computed attributes (status_color, formatted_value, dll) |
-| 5 | **Database Transactions** | `DealService::createFromLead()` dan `closeWon()` menggunakan `DB::transaction` |
-| 6 | **Observer Pattern** | Audit logging melalui Observer, bukan di setiap controller |
-| 7 | **Route Organization** | Routes dipisah per role dalam file terpisah |
-| 8 | **Database Indexing** | Migration menambahkan index pada kolom yang sering di-filter |
-| 9 | **Polymorphic Relations** | `activities` dan `audit_logs` menggunakan `morphMany` untuk fleksibilitas |
-| 10 | **Indonesian Localization** | Pesan error dan notifikasi menggunakan bahasa Indonesia |
-
-### ⚠️ Area Perbaikan
-
-| # | Masalah | Detail |
-|---|---------|--------|
-| 1 | **N+1 Query Problem** | [ReportService::getSalesPerformance()](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Services/ReportService.php#L103-L149) — melakukan 6+ query per sales user di dalam loop `map()`. Untuk 10 sales, ini 60+ queries. |
-| 2 | **Fat Service** | [ReportService](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Services/ReportService.php) memiliki 497 LOC — terlalu banyak responsibility. |
-| 3 | **Tidak ada Interface** | Service classes tidak mengimplementasikan interface, menyulitkan testing dan swapping. |
-| 4 | **Tidak ada Unit Tests** | Folder `tests/` ada tapi tidak terlihat test yang ditulis. |
-| 5 | **Inkonsistensi validation** | Admin CustomerController menggunakan inline validation, sementara controller lain menggunakan FormRequest. |
-| 6 | **Mixed response type** | Beberapa method mengembalikan JSON (toggle, moveStage), lainnya redirect — tanpa pola konsisten API vs Web. |
-| 7 | **Hardcoded target** | [Sales DashboardController](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/Sales/DashboardController.php#L77) — `$monthlyTarget = 50000000` hardcoded. |
-| 8 | **Duplikasi logika** | Admin DashboardController dan Manager DashboardController memiliki logika KPI yang mirip tapi tidak di-share. |
-| 9 | **AuditServiceProvider salah namespace** | [File](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Observers/AuditServiceProvider.php) berada di folder `Observers` tapi namespace-nya `App\Providers`. |
-| 10 | **Customer status mismatch** | Migration mendefinisikan enum `['active', 'inactive']` tapi [CustomerController](file:///c:/xampp/htdocs/BEAUTY_MAIN/BEAUTY_CRM/app/Http/Controllers/Admin/CustomerController.php#L46) memvalidasi `in:active,inactive,churn`. Status `churn` tidak ada di database. |
-
----
-
-## 14. Rekomendasi Refactoring
-
-### 🔴 Prioritas Tinggi
-
-1. **Fix `DealWonNotification` bug** — ganti `$this->deal->sales` menjadi `$this->deal->assignedUser`
-
-2. **Hapus `.env` write dari web** — gunakan database-backed settings (buat tabel `settings`) sebagai pengganti `SettingsController::update()` yang menulis langsung ke `.env`
-
-3. **Fix Customer status enum** — tambahkan `churn` ke migration, ATAU hapus dari validasi
-
-4. **Tambahkan rate limiting** di route login:
-   ```php
-   Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:5,1');
-   ```
-
-### 🟡 Prioritas Sedang
-
-5. **Pecah ReportService** menjadi:
-   - `DashboardReportService` — untuk dashboard data
-   - `SalesReportService` — untuk sales performance
-   - `RevenueReportService` — untuk revenue analytics
-   - `ForecastService` — untuk forecast data
-
-6. **Optimize N+1 queries di ReportService** — gunakan `withCount`, `withSum` di satu query, bukan loop:
-   ```php
-   User::role('Sales')
-       ->withCount(['assignedLeads', 'assignedDeals as won_deals' => fn($q) => $q->won()])
-       ->withSum(['assignedDeals as revenue' => fn($q) => $q->won()], 'value')
-       ->get();
-   ```
-
-7. **Pindahkan AuditServiceProvider** ke `app/Providers/` agar konsisten dengan namespace
-
-8. **Tambahkan authorization di CS module** — validasi bahwa CS hanya akses customer/ticket yang ter-assign ke mereka
-
-9. **Buat Interface untuk Services**:
-   ```php
-   interface DealServiceInterface {
-       public function createFromLead(Lead $lead, array $data): Deal;
-       public function closeWon(Deal $deal): Deal;
-   }
-   ```
-
-### 🟢 Prioritas Rendah
-
-10. **Hapus hardcoded monthly target** — pindahkan ke settings atau per-user target
-
-11. **Konsistenkan inline validation** — konversi Admin `CustomerController::update()` ke FormRequest
-
-12. **Tambahkan API Response Trait** — standarisasi JSON responses untuk AJAX endpoints
-
-13. **Buat Repository Layer** (opsional) — jika ingin decoupling lebih lanjut dari Eloquent
-
-14. **Tambahkan PHPUnit tests** — minimal untuk:
-    - `DealService::createFromLead()`
-    - `DealService::closeWon()`
-    - `CustomerService::updateTicketStatus()` (state machine)
-
----
-
-## 15. Bagian yang Memerlukan Konfirmasi
-
-> [!IMPORTANT]
-> Beberapa aspek tidak dapat dikonfirmasi hanya dari source code:
-
-| # | Aspek | Status |
-|---|-------|--------|
-| 1 | **Konfigurasi `beauty-crm.php`** | Direferensi di code tapi file config tidak ditemukan di `config/` — perlu konfirmasi apakah ada |
-| 2 | **Blade views lengkap** | Views tidak diperiksa secara mendetail (hanya controller → view mapping) |
-| 3 | **Middleware `role:`** | Menggunakan middleware bawaan Spatie Permission — implementasinya ada di package, bukan source code project |
-| 4 | **Queue configuration** | Notifications menggunakan `Queueable` trait tapi tidak ada konfigurasi queue driver yang terlihat — kemungkinan berjalan synchronous |
-| 5 | **Database driver** | File `database.sqlite` ada, mengindikasikan SQLite untuk development. Production driver perlu konfirmasi |
-| 6 | **LeadExport, SalesPerformanceExport, RevenueExport** | Class ada di `app/Exports/` tapi implementasi detailnya belum dibaca (summary berdasarkan filename dan ukuran file) |
-| 7 | **Blade component `badge`** | Terlihat open di editor tapi belum diperiksa implementasinya |
+1. **Rate Limiting Login**:
+   - Direkomendasikan menambahkan `throttle:5,1` pada route `POST /login` di [routes/web.php](file:///c:/laragon/www/BEAUTY_CRM/routes/web.php) untuk mitigasi brute force attack.
+2. **Queueing untuk Pengiriman Pesan Massal**:
+   - Untuk data blast berskala ribuan customer/deal, proses cURL WhatsApp dan SMTP Email direkomendasikan dialihkan menggunakan Laravel Queue (`ShouldQueue` job).
+3. **Penyimpanan Pengaturan ke Basis Data**:
+   - Memindahkan penyimpanan pengaturan [SettingsController.php](file:///c:/laragon/www/BEAUTY_CRM/app/Http/Controllers/Admin/SettingsController.php) dari penulisan file `.env` langsung ke tabel basis data `settings` untuk kepatuhan *12-Factor App*.

@@ -3,9 +3,7 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -14,14 +12,19 @@ class BlastMessageMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $messageContent;
+    public string $messageContent;
+    public ?string $imagePath; // Path relatif ke storage/app/public/
 
     /**
      * Create a new message instance.
+     *
+     * @param string      $messageContent Isi pesan teks
+     * @param string|null $imagePath      Path gambar relatif (misal: uploads/blast/abc.jpg)
      */
-    public function __construct($messageContent)
+    public function __construct(string $messageContent, ?string $imagePath = null)
     {
         $this->messageContent = $messageContent;
+        $this->imagePath      = $imagePath;
     }
 
     /**
@@ -36,13 +39,15 @@ class BlastMessageMail extends Mailable
 
     /**
      * Get the message content definition.
+     * Gambar di-embed sebagai inline CID — tidak membutuhkan URL publik.
      */
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.blast',
+            view: 'emails.blast',
             with: [
-                'content' => $this->messageContent,
+                'content'   => $this->messageContent,
+                'imagePath' => $this->imagePath,
             ]
         );
     }
@@ -50,7 +55,7 @@ class BlastMessageMail extends Mailable
     /**
      * Get the attachments for the message.
      *
-     * @return array<int, Attachment>
+     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
      */
     public function attachments(): array
     {

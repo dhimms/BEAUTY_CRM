@@ -26,6 +26,10 @@
     {{-- SortableJS --}}
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
+    {{-- Quill Rich Text Editor --}}
+    <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+
     @stack('styles')
 
     <style>
@@ -36,6 +40,33 @@
         body {
             font-family: 'DM Sans', sans-serif;
             background-color: #FAF7F2;
+        }
+
+        /* Custom Quill Styling */
+        .ql-toolbar.ql-snow {
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+            border-color: #E5E7EB !important;
+            background-color: #FAFAFA;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .ql-container.ql-snow {
+            border-bottom-left-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
+            border-color: #E5E7EB !important;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.875rem;
+            min-height: 140px;
+            background-color: #ffffff;
+        }
+        .ql-editor {
+            min-height: 140px;
+            color: #1F2937;
+            line-height: 1.6;
+        }
+        .ql-editor.ql-blank::before {
+            color: #9CA3AF;
+            font-style: normal;
         }
 
         .font-serif {
@@ -181,6 +212,37 @@
             v{{ config('beauty-crm.version') }} by TEAM TEKNO
         </footer>
     </div>
+
+    <script>
+        window.initQuillEditor = function(element, placeholderText) {
+            if (!element) return null;
+            if (element.__quill) return element.__quill;
+            if (typeof Quill === 'undefined') {
+                console.warn('Quill library not ready.');
+                return null;
+            }
+            try {
+                const quill = new Quill(element, {
+                    theme: 'snow',
+                    placeholder: placeholderText || 'Tulis pesan di sini...',
+                    modules: {
+                        toolbar: [
+                            [{ 'header': [1, 2, 3, false] }],
+                            ['bold', 'italic', 'underline', 'strike'],
+                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                            [{ 'color': [] }, { 'background': [] }],
+                            ['clean']
+                        ]
+                    }
+                });
+                element.__quill = quill;
+                return quill;
+            } catch (err) {
+                console.error('Error initializing Quill:', err);
+                return null;
+            }
+        };
+    </script>
 
     @stack('scripts')
 </body>

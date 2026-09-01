@@ -26,7 +26,6 @@
     selectedIds: $persist([]), 
     showBlastModal: false,
     channel: 'whatsapp',
-    message: '',
     toggleAll(e) {
         if (e.target.checked) {
             this.selectedIds = Array.from(document.querySelectorAll('.customer-checkbox')).map(cb => cb.value);
@@ -139,33 +138,137 @@
 
     {{-- Blast Message Modal --}}
     <div x-show="showBlastModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div x-show="showBlastModal" x-transition.opacity class="fixed inset-0 bg-charcoal-900/50 backdrop-blur-sm transition-opacity" @click="showBlastModal = false"></div>
-            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div x-show="showBlastModal" x-transition class="relative z-10 inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" @click.stop>
-                <form method="POST" action="{{ route('cs.customers.blast') }}" @submit="setTimeout(() => { selectedIds = [] }, 100)">
+        {{-- Backdrop --}}
+        <div x-show="showBlastModal" 
+             x-transition.opacity 
+             class="fixed inset-0 bg-charcoal-900/60 backdrop-blur-xs transition-opacity" 
+             @click="showBlastModal = false">
+        </div>
+
+        {{-- Modal Box Container --}}
+        <div class="fixed inset-0 z-10 flex min-h-full items-center justify-center p-4 sm:p-6 overflow-y-auto pointer-events-none">
+            <div x-show="showBlastModal" 
+                 x-transition:enter="ease-out duration-200"
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave="ease-in duration-150"
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 class="relative w-full max-w-xl bg-white rounded-2xl text-left shadow-2xl overflow-hidden pointer-events-auto border border-charcoal-200 my-8" 
+                 @click.stop>
+                <form id="cs-blast-form" method="POST" action="{{ route('cs.customers.blast') }}"
+                    enctype="multipart/form-data"
+                    @submit.prevent="
+                        const quill = $refs.csEditor ? $refs.csEditor.__quill : null;
+                        let html = '';
+                        let isBlank = true;
+                        if (quill) {
+                            html = quill.root.innerHTML;
+                            isBlank = quill.getText().trim().length === 0;
+                        } else {
+                            html = $refs.csEditor ? $refs.csEditor.innerText : '';
+                            isBlank = !html.trim();
+                        }
+                        if (isBlank) {
+                            alert('Silakan tulis isi pesan terlebih dahulu.');
+                            return;
+                        }
+                        $refs.csMessageInput.value = html;
+                        setTimeout(() => { selectedIds = [] }, 100);
+                        $el.submit();
+                    ">
                     @csrf
                     <template x-for="id in selectedIds">
                         <input type="hidden" name="customer_ids[]" :value="id">
                     </template>
+                    <input type="hidden" name="message" x-ref="csMessageInput">
                     <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                         <div class="mb-4">
                             <h3 class="text-lg leading-6 font-serif font-semibold text-charcoal-900" id="modal-title">Kirim Blast Pesan</h3>
                             <p class="text-sm text-charcoal-500 mt-1">Pesan akan dikirimkan ke <span class="font-bold text-amber-600" x-text="selectedIds.length"></span> pelanggan.</p>
                         </div>
                         <div class="space-y-4">
+
+                            {{-- Jalur Pengiriman --}}
                             <div>
                                 <label class="block text-sm font-medium text-charcoal-700 mb-1">Jalur Pengiriman</label>
-                                <select name="channel" x-model="channel" class="w-full px-4 py-2 border border-charcoal-200 rounded-xl focus:ring-2 focus:ring-amber-500 bg-white">
+                                <select name="channel" x-model="channel" class="w-full px-4 py-2 border border-charcoal-200 rounded-xl focus:ring-2 focus:ring-emerald-500 bg-white">
                                     <option value="whatsapp">WhatsApp</option>
                                     <option value="email">Email</option>
                                 </select>
                             </div>
+
+                            {{-- Isi Pesan (Rich Text) --}}
                             <div>
-                                <label class="block text-sm font-medium text-charcoal-700 mb-1">Isi Pesan</label>
-                                <textarea name="message" x-model="message" rows="4" required placeholder="Ketik pesan Anda di sini..."
-                                    class="w-full px-4 py-3 border border-charcoal-200 rounded-xl focus:ring-2 focus:ring-amber-500"></textarea>
+                                <label class="block text-sm font-medium text-charcoal-700 mb-1">Isi Pesan (Rich Text)</label>
+                                <div class="rounded-xl border border-charcoal-200 overflow-hidden bg-white shadow-xs focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500">
+                                    <div x-ref="csEditor"
+                                         x-init="$watch('showBlastModal', val => { 
+                                             if (val) {
+                                                 $nextTick(() => {
+                                                     if (window.initQuillEditor) {
+                                                         window.initQuillEditor($refs.csEditor, 'Tulis pesan blast di sini (bisa format tebal, miring, list nomor/bullet, warna, dll)...');
+                                                     }
+                                                 });
+                                             }
+                                         })"
+                                         style="height: 160px;"></div>
+                                </div>
+                                <p class="text-xs text-charcoal-400 mt-1.5 flex items-center gap-1">
+                                    <span>💡</span> Format teks (tebal, miring, list, warna) otomatis disesuaikan untuk Email (HTML) &amp; WhatsApp.
+                                </p>
                             </div>
+
+                            {{-- Upload Gambar (Opsional) --}}
+                            <div x-data="{ fileName: '', previewUrl: '' }">
+                                <label class="block text-sm font-medium text-charcoal-700 mb-1">
+                                    Upload Gambar
+                                    <span class="text-charcoal-400 font-normal">(Opsional)</span>
+                                </label>
+
+                                {{-- Drop Zone --}}
+                                <label for="cs-image-upload"
+                                    class="flex flex-col items-center justify-center w-full border-2 border-dashed border-charcoal-200 rounded-xl cursor-pointer hover:border-amber-400 hover:bg-amber-50/30 transition-colors p-4"
+                                    :class="previewUrl ? 'border-amber-400 bg-amber-50/30' : ''">
+
+                                    {{-- Preview --}}
+                                    <template x-if="previewUrl">
+                                        <div class="w-full">
+                                            <img :src="previewUrl" class="max-h-32 mx-auto rounded-lg object-contain mb-2">
+                                            <p class="text-xs text-center text-charcoal-500 truncate" x-text="fileName"></p>
+                                            <p class="text-xs text-center text-amber-600 mt-1">Klik untuk ganti gambar</p>
+                                        </div>
+                                    </template>
+
+                                    {{-- Default State --}}
+                                    <template x-if="!previewUrl">
+                                        <div class="text-center">
+                                            <svg class="w-8 h-8 mx-auto text-charcoal-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                            </svg>
+                                            <p class="text-sm text-charcoal-500">Klik untuk pilih gambar</p>
+                                            <p class="text-xs text-charcoal-400 mt-1">JPG, PNG, WebP — Maks. 5MB</p>
+                                        </div>
+                                    </template>
+
+                                    <input id="cs-image-upload" type="file" name="image" accept="image/*" class="hidden"
+                                        @change="
+                                            const file = $event.target.files[0];
+                                            if (file) {
+                                                fileName = file.name;
+                                                const reader = new FileReader();
+                                                reader.onload = e => previewUrl = e.target.result;
+                                                reader.readAsDataURL(file);
+                                            }
+                                        ">
+                                </label>
+
+                                <p class="text-xs text-charcoal-400 mt-1">
+                                    <span x-show="channel === 'whatsapp'">📲 Gambar akan dikirim langsung ke WhatsApp penerima.</span>
+                                    <span x-show="channel === 'email'">📧 Gambar akan tampil di dalam body email.</span>
+                                </p>
+                            </div>
+
                         </div>
                     </div>
                     <div class="bg-charcoal-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-charcoal-100">
