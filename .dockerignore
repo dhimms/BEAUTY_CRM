@@ -1,0 +1,15 @@
+.git
+.github
+.idea
+.vscode
+node_modules
+vendor
+public/storage
+storage/*.key
+storage/pail
+storage/logs/*.log
+*.log
+.phpunit.cache
+.phpunit.result.cache
+tests
+docs
