@@ -219,9 +219,11 @@
                                          x-init="$watch('showBlastModal', val => { 
                                              if (val) {
                                                  $nextTick(() => {
-                                                     if (window.initQuillEditor) {
-                                                         window.initQuillEditor($refs.salesEditor, 'Tulis pesan blast di sini (bisa format tebal, miring, list nomor/bullet, warna, dll)...');
-                                                     }
+                                                     setTimeout(() => {
+                                                         if (window.initQuillEditor) {
+                                                             window.initQuillEditor($refs.salesEditor, 'Tulis pesan blast di sini (bisa format tebal, miring, list nomor/bullet, warna, dll)...');
+                                                         }
+                                                     }, 50);
                                                  });
                                              }
                                          })"

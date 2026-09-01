@@ -217,29 +217,51 @@
         window.initQuillEditor = function(element, placeholderText) {
             if (!element) return null;
             if (element.__quill) return element.__quill;
-            if (typeof Quill === 'undefined') {
-                console.warn('Quill library not ready.');
-                return null;
-            }
-            try {
-                const quill = new Quill(element, {
-                    theme: 'snow',
-                    placeholder: placeholderText || 'Tulis pesan di sini...',
-                    modules: {
-                        toolbar: [
-                            [{ 'header': [1, 2, 3, false] }],
-                            ['bold', 'italic', 'underline', 'strike'],
-                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                            [{ 'color': [] }, { 'background': [] }],
-                            ['clean']
-                        ]
+
+            function setup() {
+                if (!element) return null;
+                if (element.__quill) return element.__quill;
+                if (typeof Quill === 'undefined') return null;
+
+                try {
+                    const prev = element.previousElementSibling;
+                    if (prev && prev.classList.contains('ql-toolbar')) {
+                        prev.remove();
                     }
-                });
-                element.__quill = quill;
-                return quill;
-            } catch (err) {
-                console.error('Error initializing Quill:', err);
-                return null;
+                    const quill = new Quill(element, {
+                        theme: 'snow',
+                        placeholder: placeholderText || 'Tulis pesan di sini...',
+                        modules: {
+                            toolbar: [
+                                [{ 'header': [1, 2, 3, false] }],
+                                ['bold', 'italic', 'underline', 'strike'],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                [{ 'color': [] }, { 'background': [] }],
+                                ['clean']
+                            ]
+                        }
+                    });
+                    element.__quill = quill;
+                    return quill;
+                } catch (err) {
+                    console.error('Error initializing Quill:', err);
+                    return null;
+                }
+            }
+
+            if (typeof Quill !== 'undefined') {
+                return setup();
+            } else {
+                let count = 0;
+                const timer = setInterval(() => {
+                    count++;
+                    if (typeof Quill !== 'undefined') {
+                        clearInterval(timer);
+                        setup();
+                    } else if (count > 50) {
+                        clearInterval(timer);
+                    }
+                }, 50);
             }
         };
     </script>

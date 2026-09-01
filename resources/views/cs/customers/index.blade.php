@@ -61,8 +61,8 @@
             @endif
         </form>
 
-        <button x-show="selectedIds.length > 0" x-cloak @click="showBlastModal = true"
-            class="px-4 py-2.5 bg-amber-600 text-white rounded-xl text-sm font-medium hover:bg-amber-700 transition-colors shadow-sm flex items-center gap-2 whitespace-nowrap">
+        <button x-show="selectedIds.length > 0" x-cloak @click="showBlastModal = true; $nextTick(() => { if (window.initQuillEditor && $refs.csEditor) window.initQuillEditor($refs.csEditor, 'Tulis pesan blast di sini (bisa format tebal, miring, list nomor/bullet, warna, dll)...'); })"
+            class="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2 whitespace-nowrap">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
             Blast Pesan (<span x-text="selectedIds.length"></span>)
         </button>
@@ -185,14 +185,14 @@
                     <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                         <div class="mb-4">
                             <h3 class="text-lg leading-6 font-serif font-semibold text-charcoal-900" id="modal-title">Kirim Blast Pesan</h3>
-                            <p class="text-sm text-charcoal-500 mt-1">Pesan akan dikirimkan ke <span class="font-bold text-amber-600" x-text="selectedIds.length"></span> pelanggan.</p>
+                            <p class="text-sm text-charcoal-500 mt-1">Pesan akan dikirimkan ke <span class="font-bold text-blue-600" x-text="selectedIds.length"></span> pelanggan.</p>
                         </div>
                         <div class="space-y-4">
 
                             {{-- Jalur Pengiriman --}}
                             <div>
                                 <label class="block text-sm font-medium text-charcoal-700 mb-1">Jalur Pengiriman</label>
-                                <select name="channel" x-model="channel" class="w-full px-4 py-2 border border-charcoal-200 rounded-xl focus:ring-2 focus:ring-emerald-500 bg-white">
+                                <select name="channel" x-model="channel" class="w-full px-4 py-2 border border-charcoal-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white">
                                     <option value="whatsapp">WhatsApp</option>
                                     <option value="email">Email</option>
                                 </select>
@@ -201,14 +201,16 @@
                             {{-- Isi Pesan (Rich Text) --}}
                             <div>
                                 <label class="block text-sm font-medium text-charcoal-700 mb-1">Isi Pesan (Rich Text)</label>
-                                <div class="rounded-xl border border-charcoal-200 overflow-hidden bg-white shadow-xs focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500">
+                                <div class="rounded-xl border border-charcoal-200 overflow-hidden bg-white shadow-xs focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
                                     <div x-ref="csEditor"
                                          x-init="$watch('showBlastModal', val => { 
                                              if (val) {
                                                  $nextTick(() => {
-                                                     if (window.initQuillEditor) {
-                                                         window.initQuillEditor($refs.csEditor, 'Tulis pesan blast di sini (bisa format tebal, miring, list nomor/bullet, warna, dll)...');
-                                                     }
+                                                     setTimeout(() => {
+                                                         if (window.initQuillEditor) {
+                                                             window.initQuillEditor($refs.csEditor, 'Tulis pesan blast di sini (bisa format tebal, miring, list nomor/bullet, warna, dll)...');
+                                                         }
+                                                     }, 50);
                                                  });
                                              }
                                          })"
@@ -228,15 +230,15 @@
 
                                 {{-- Drop Zone --}}
                                 <label for="cs-image-upload"
-                                    class="flex flex-col items-center justify-center w-full border-2 border-dashed border-charcoal-200 rounded-xl cursor-pointer hover:border-amber-400 hover:bg-amber-50/30 transition-colors p-4"
-                                    :class="previewUrl ? 'border-amber-400 bg-amber-50/30' : ''">
+                                    class="flex flex-col items-center justify-center w-full border-2 border-dashed border-charcoal-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-colors p-4"
+                                    :class="previewUrl ? 'border-blue-400 bg-blue-50/30' : ''">
 
                                     {{-- Preview --}}
                                     <template x-if="previewUrl">
                                         <div class="w-full">
                                             <img :src="previewUrl" class="max-h-32 mx-auto rounded-lg object-contain mb-2">
                                             <p class="text-xs text-center text-charcoal-500 truncate" x-text="fileName"></p>
-                                            <p class="text-xs text-center text-amber-600 mt-1">Klik untuk ganti gambar</p>
+                                            <p class="text-xs text-center text-blue-600 mt-1">Klik untuk ganti gambar</p>
                                         </div>
                                     </template>
 
@@ -272,7 +274,7 @@
                         </div>
                     </div>
                     <div class="bg-charcoal-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-charcoal-100">
-                        <button type="submit" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2 bg-amber-600 text-base font-medium text-white hover:bg-amber-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm transition-colors">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm transition-colors">
                             Kirim Pesan
                         </button>
                         <button type="button" @click="showBlastModal = false" class="mt-3 w-full inline-flex justify-center rounded-xl border border-charcoal-200 shadow-sm px-4 py-2 bg-white text-base font-medium text-charcoal-700 hover:bg-charcoal-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-colors">
