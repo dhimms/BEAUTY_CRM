@@ -120,13 +120,13 @@
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
     {{-- Sales Performance Comparison --}}
     <x-card>
-        <h3 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Sales Performance</h3>
+        <h3 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Performa Sales</h3>
         <div style="height: 280px;"><canvas id="salesComparisonChart"></canvas></div>
     </x-card>
 
     {{-- Lead Sources by Month --}}
     <x-card>
-        <h3 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Lead Sources (6 Bulan)</h3>
+        <h3 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Sumber Leads (6 Bulan)</h3>
         <div style="height: 280px;"><canvas id="leadSourcesChart"></canvas></div>
     </x-card>
 </div>
@@ -135,7 +135,7 @@
 <x-card :padding="false">
     <div class="p-6 border-b border-charcoal-100">
         <div class="flex items-center justify-between">
-            <h3 class="font-serif text-lg font-semibold text-charcoal-900">Sales Team Leaderboard</h3>
+            <h3 class="font-serif text-lg font-semibold text-charcoal-900">Peringkat Tim Sales</h3>
             <a href="{{ route('manager.team.index') }}" class="text-amber-600 hover:text-amber-700 text-sm font-medium">Detail →</a>
         </div>
     </div>

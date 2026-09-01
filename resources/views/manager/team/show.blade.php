@@ -25,11 +25,11 @@
     @php
         $kpis = [
             ['label' => 'Leads', 'value' => $memberData['leads'], 'color' => 'amber'],
-            ['label' => 'Qualified', 'value' => $memberData['qualified'], 'color' => 'purple'],
+            ['label' => 'Kualifikasi', 'value' => $memberData['qualified'], 'color' => 'purple'],
             ['label' => 'Deals', 'value' => $memberData['deals'], 'color' => 'blue'],
-            ['label' => 'Won', 'value' => $memberData['won'], 'color' => 'emerald'],
-            ['label' => 'Lost', 'value' => $memberData['lost'], 'color' => 'rose'],
-            ['label' => 'Win Rate', 'value' => $memberData['win_rate'] . '%', 'color' => 'amber'],
+            ['label' => 'Berhasil', 'value' => $memberData['won'], 'color' => 'emerald'],
+            ['label' => 'Gagal', 'value' => $memberData['lost'], 'color' => 'rose'],
+            ['label' => 'Rasio Sukses', 'value' => $memberData['win_rate'] . '%', 'color' => 'amber'],
         ];
     @endphp
     @foreach($kpis as $kpi)
